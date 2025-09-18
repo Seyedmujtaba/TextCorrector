@@ -1,1 +1,1 @@
-# Handwriting-Calculator
+# text corrector
