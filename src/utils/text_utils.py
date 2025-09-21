@@ -8,7 +8,7 @@ def to_lowercase(text):
 #Separating words from text
 def split_words(text):
     """Separating words from text and removing invalid characters"""
-    text = re.sub(r'[^a-zA-Z\s]', ' ', text)
+    text = re.sub(r'[^a-zA-Z\s\']', ' ', text)
     words = text.split()
     return words
 
