@@ -19,8 +19,9 @@ def load_dictionary(file_path):
             for line in file:
                 #Remove leading/trailing whitespaces and convert to lowercase
                 word = line.strip().lower()
-                if word: #If the line was not empty
-                words.add(word)
+                if word:  # If the line was not empty
+                    words.add(word)
+
     
     except FileNotFoundError:
         #Handle the case where the file does not exist
