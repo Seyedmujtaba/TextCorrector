@@ -2,32 +2,31 @@
 
 
 # src/utils/main.py
-import sys
 import os
+import sys
 import argparse
 
-# Import text_utils whether running as a module or a script
+# allow both: `python -m src.utils.main` and `python src/utils/main.py`
 try:
     from .text_utils import to_lowercase, split_words, clean_spaces, join_words
+    from .dict_loader import load_dictionary
 except ImportError:
-    # fallback for direct execution: python src/utils/main.py
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    if current_dir not in sys.path:
-        sys.path.insert(0, current_dir)
+    here = os.path.dirname(os.path.abspath(__file__))
+    if here not in sys.path:
+        sys.path.insert(0, here)
     from text_utils import to_lowercase, split_words, clean_spaces, join_words
+    from dict_loader import load_dictionary
 
 
-def process_text(text):
-    """Run a simple normalization pipeline using utils functions"""
-    text = clean_spaces(text)
-    text = to_lowercase(text)
-    words = split_words(text)
-    normalized = join_words(words)
-    return normalized, words
+def _default_dict_path():
+    """libs/dictionary/en_dict.txt relative to project root"""
+    utils_dir = os.path.dirname(os.path.abspath(__file__))       # .../src/utils
+    project_root = os.path.abspath(os.path.join(utils_dir, "..", ".."))  # project root
+    return os.path.join(project_root, "libs", "dictionary", "en_dict.txt")
 
 
-def read_input(args):
-    """Read text from --text, --file, or STDIN"""
+def _read_input(args):
+    """read from --text, --file, or STDIN"""
     if args.text is not None:
         return args.text
     if args.file is not None:
@@ -38,26 +37,66 @@ def read_input(args):
     return input("Enter text: ")
 
 
+def _normalize(text):
+    """clean -> lowercase -> split -> join"""
+    text = clean_spaces(text)
+    text = to_lowercase(text)
+    words = split_words(text)
+    normalized = join_words(words)
+    return normalized, words
+
+
+def _unknown(words, dictionary):
+    """tokens not present in dictionary"""
+    if not dictionary:
+        return []
+    out = []
+    for w in words:
+        if w in dictionary:
+            continue
+        w2 = w.strip("'")
+        if w2 and w2 in dictionary:
+            continue
+        out.append(w)
+    return out
+
+
 def main():
-    parser = argparse.ArgumentParser(description="Utility runner for text_utils.py")
-    parser.add_argument("-t", "--text", help="Raw text to process")
-    parser.add_argument("-f", "--file", help="Path to a text file")
-    parser.add_argument("--show-words", action="store_true", help="Print tokenized words")
+    parser = argparse.ArgumentParser(description="utils runner: normalize text + dictionary check")
+    parser.add_argument("-t", "--text", help="raw text to process")
+    parser.add_argument("-f", "--file", help="path to a text file")
+    parser.add_argument("--dict", dest="dict_path", help="path to dictionary file")
+    parser.add_argument("--show-words", action="store_true", help="print tokenized words")
     args = parser.parse_args()
 
-    raw = read_input(args)
+    dict_path = args.dict_path or _default_dict_path()
+    dictionary = load_dictionary(dict_path)
+
+    if dictionary:
+        print(f"Dictionary loaded: {len(dictionary)} words")
+    else:
+        print(f"Dictionary not loaded or empty: {dict_path}")
+
+    raw = _read_input(args)
     if not raw or raw.strip() == "":
         print("No input text.")
         sys.exit(1)
 
-    normalized, words = process_text(raw)
+    normalized, words = _normalize(raw)
 
-    print("=== Normalized Text ===")
+    print("\n=== Normalized Text ===")
     print(normalized)
 
     print("\n=== Stats ===")
-    print("Words:", len(words))
-    print("Unique:", len(set(words)))
+    print(f"Words: {len(words)}")
+    print(f"Unique: {len(set(words))}")
+
+    if dictionary:
+        unk = _unknown(words, dictionary)
+        print(f"Unknown: {len(unk)}")
+        if unk:
+            sample = sorted(set(unk))[:20]
+            print(" -> " + ", ".join(sample))
 
     if args.show_words:
         print("\n=== Tokens ===")
