@@ -1,1 +1,329 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title> spelling checker Mana </title>
+
+    <link href="C:\Users\keyvan\Documents\fileejraee\porozhe\style.css" rel="stylesheet" />
+    
+
+</head>
+<body>
+
+
+//style edit
+    
+     <style>
+
+     #subject
+{
+    font-family:Harmony;
+    text-align: center;
+    color: #7604ca;
+
+}
+
+
+#description
+{
+    font-family:Comic Sans MS;
+    color: #f99c11 ;
+    
+}
+
+
+#stage
+{
+    font-family: Impact;
+    color: #ff005c ;
+}
+
+
+#taeed
+    {
+      background-color: white;
+      color: black;     
+      border: 2px solid #0cc476 ; 
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    #taeed:hover,
+    #taeed:active
+    {
+      background-color: #0cc476 ; 
+      color: white;      
+    }
+
+
+    #darkmode
+    {
+      background-color: white;
+      color: black;     
+      border: 2px solid black; 
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    #darkmode:hover,
+    #darkmode:active
+    {
+      background-color: black; 
+      color: white;      
+    }
+
+     #darkmode
+    {
+    cursor: pointer;
+    float: right;
+    }
+
+
+    #activitybasin
+    {
+    color: #ff430b;
+    }
+
+
+    #presentationmember
+    {
+        color: #22afc6;
+    }
+
+    #presentationmember
+    {
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    #presentationmember:hover
+    {
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+
+    #ghesmat3
+    {
+    border-collapse: collapse; /* خطوط به هم بچسبن */
+    border: none;             /* دور جدول خط نداشته باشه */
+    }
+  #ghesmat3 th
+    {
+    border-left: 1px solid black; /* خط بین ستون‌ها */
+    padding: 8px;
+    }
+  #ghesmat3 th:first-child
+    {
+    border-left: none; /* اولین ستون سمت چپ بدون خط */
+    }
+
+
+
+    body {
+    background-color: white;
+    color: black;
+    transition: all 0.3s ease; /* تغییر نرم رنگ‌ها */
+  }
+
+  body.dark {
+    background-color: #121212; /* رنگ زمینه تاریک */
+    color: white;              /* رنگ متن روشن */
+  }
+
+  #darkmode {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    cursor: pointer;
+  }
+
+
+
+    </style>
+
+
+    //bakhsh1=moarefi va logo
+
+        <div style="align-items: right;">
+
+        <button id="darkmode" >Dark Mode</button>
+
+        </div>
+
+
+    <div>
+        <table >
+        
+            <tr>
+                <td style="width: 340px;">
+                    <img src="C:\Users\keyvan\Documents\fileejraee\porozhe\logo.JPG" style ="width: 1.6cm ; height: 4cm ;" />
+                    </td>
+
+                    <td style="width: 700px;">
+                    <h1 id="subject" > Free online spelling checker Mana </h1>
+                    <h4 id="description" > Fix spelling mistakes, confusing grammar, and more with Mana's free AI spell checker. </h4>
+                    <h4 id="description" > enter your text below to get instant writing suggestions and sure your work is at its best. </h4> 
+                   </td>
+
+                   <td style="width: 300px;">
+                   </td>
+
+             </tr>
+        </table>
+     </div>
+
+
+    </br>
+
+    //bakhsh2=textarea va marahel anjam
+
+
+    <div>
+        <table >
+            <tr>
+                
+                <td>
+                    <textarea type="text" name="checkbox1" style="width: 555px; height: 459px;" placeholder="Start typing.."  autofocus  required > </textarea>
+                </td>
+
+
+                <td>
+                    <textarea type="text" name="checkbox2" style="width: 555px; height: 459px;" > </textarea>
+                </td>
+
+
+                <td>
+
+                    <h2 id="subject" > Let's get started.. </h2>
+                
+                    <div  id="description" >
+                        <ul>
+                            <li><h4 id="stage"> Step 1 : </h4></li>
+                            <h5 id="description"> Type your text </h5>
+                            <li><h4 id="stage"> Step 2 : </h4></li>
+                            <h5 id="description"> To see suggestions for corrections, click the "Get Corrections" button </h5>
+                            <li><h4 id="stage"> Step 3 : </h4></li>
+                            <h5 id="description"> The program starts analyzing and returns suggestions based on the correction in the word order, as needed. </h5>
+                        </ul>
+
+                            <button type="button" id="taeed"> To view the proposed amendments </button>
+
+                    </div>
+
+                </td>
+
+            </tr>
+        </table>
+
+
+    </div>
+
+    
+
+</br>
+
+    //bakhsh3= matn ax matn
+
+
+    <div>
+        <table id="ghesmat3">
+            <tr>
+                <th style="width: 500px;" >
+
+                    <h2 id="subject" > What is a spell checker? </h2>
+                    <h4  id="description" style="text-align: left;" > 
+                    An online spell checker is a tool that searches 
+                    text for misspelled words and suggests corrections.
+                    </br>
+                    This tool finds misspellings and commonly confused 
+                    words (such as "affect" and "effect").
+                    </br>
+                    A free spell checker provides additional assurance 
+                    that the work you submit is proofread and free of 
+                    errors that distract from your main points.
+                    </h4>
+
+                </th>
+
+
+                <th style="width: 350px;" >
+
+                <img src="C:\Users\keyvan\Documents\fileejraee\porozhe\axjadval.JPG" style ="width: 12cm ; height: 8cm ;" />
+
+                </th>
+
+
+                <th style="width: 500px;" >
+
+                    <h2 id="subject" > How is a grammar spell checker different
+                        from a word processor spell checker? </h2>
+                    <h4  id="description" style="text-align: left;" >
+                        Regular spell checkers tell you 
+                        whether a word is misspelled.
+                    </br>
+                        The free spell checker mana para is hypertext ,
+                    </br>
+                        and also tells you when you are using a correctly 
+                        spelled word in the wrong context.
+                    </h4>
+                </th>
+
+            </tr>
+        </table>   
+    </div>
+
+    
+</br>
+
+
+    //bakhsh4 = moarefi aza
+
+    <div>  
+
+         <h2 id="subject"> Introducing the members: </h2>
+
+    </br>
+
+        <table >
+            <tr>
+
+
+                <td style="width:450px ;">
+                    <h3 id="activitybasin" style="text-align: center; text-decoration: underline;"> Frountend: </h3>
+                    <h5 id="presentationmember" style="text-align: center;"> NEGIN KHOSHDEL </h5>
+                </td>
+                
+                
+                <td style="width:450px ;">
+                    <h3 id="activitybasin" style="text-align: center; text-decoration: underline;"> Backend: </h3>
+                    <h5 id="presentationmember" style="text-align: center;" > AYLA RASULI </h5>
+                </td>
+
+
+                <td style="width:450px ;">
+                    <h3 id="activitybasin" style="text-align: center; text-decoration: underline;"> Data Base: </h3>
+                    <h5 id="presentationmember" style="text-align: center;"> SEYED MOJTABA TABATABAEE </h5>
+                </td>
+
+
+            </tr>
+        </table>
+    </div>
+
+    
+  <script>
+    const btn = document.getElementById("darkmode");
+    btn.addEventListener("click", () => {
+      document.body.classList.toggle("dark");
+    });
+  </script>
+
+  <script>
+    alert("welcom to website ❤️ ")
+  </script>
+
+</body>
+</html>
