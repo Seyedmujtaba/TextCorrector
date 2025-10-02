@@ -13,9 +13,9 @@ TextCorrector is a simple web-based spell checker for English texts that runs di
 
 ## Tech Stack
 
-- Frontend: HTML, CSS, JavaScript
-- Backend: Python (Pyodide)
-- Libraries: spellchecker with built-in English dictionary
+- HTML, CSS, JavaScript (frontend)
+- Python (via Pyodide, runs in-browser)
+- Built-in English dictionary
 
 ## Usage
 
@@ -28,13 +28,13 @@ TextCorrector is a simple web-based spell checker for English texts that runs di
 
 TextCorrector/
 ├── README.md
-├── libs/ # Libraries and dependencies
+├── libs/ # Additional resources (e.g., dictionaries)
 ├── scripts/ # Setup scripts (e.g., Pyodide bootstrap)
 │ └── pyodide_setup.js
-├── src/ # Python source code (spell checker logic, etc.)
+├── src/ # Python source code (spell checker logic)
 │ └── spell_checker.py
-└── static/ # Static assets for the web UI
-├── index.html # Main HTML file (open this)
+└── static/ # Web UI files
+├── index.html # Main entry point
 ├── style.css # Stylesheet
 └── app.js # Frontend logic
 
