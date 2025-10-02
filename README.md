@@ -38,6 +38,13 @@ TextCorrector/
 ├── style.css # Stylesheet
 └── app.js # Frontend logic
 
+## Build & Releases
+
+The project can be used directly by opening `static/index.html`, but for end-users we also provide a **single-file offline build**.
+
+- Developers: run `python3 build.py` to generate the bundled file at `dist/text-corrector.html`.
+- End-users: simply download the latest release from [Releases](../../releases) and double-click `text-corrector.html` to run it offline in your browser.
+
 ## Future Improvements
 
 - Support for multiple languages
