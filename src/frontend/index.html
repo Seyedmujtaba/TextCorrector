@@ -11,22 +11,25 @@
   <!-- Google Material Icons (Rounded) -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded" />
 
-  <!-- Custom CSS -->
+  <!-- Custom CSS (local) -->
   <link rel="stylesheet" href="style.css" />
+
+  <!-- Pyodide (must load before project scripts) -->
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.26.1/full/pyodide.js"></script>
 </head>
 <body class="light-theme">
 
   <!-- Navbar -->
   <nav class="navbar navbar-expand-lg custom-navbar shadow-sm px-3">
-  <a class="navbar-brand d-flex align-items-center gap-2 text fw-bold" href="#">
-    <img src="logo.png" alt="logo" class="logo" />
-    TextCorrector
-  </a>
-  <!-- Theme toggle -->
-  <button id="themeToggle" class="btn btn-glass ms-auto rounded-circle" aria-label="Toggle theme">
-    <span class="material-symbols-rounded">dark_mode</span>
-  </button>
-</nav>
+    <a class="navbar-brand d-flex align-items-center gap-2 text fw-bold" href="#">
+      <img src="logo.png" alt="logo" class="logo" />
+      TextCorrector
+    </a>
+    <!-- Theme toggle -->
+    <button id="themeToggle" class="btn btn-glass ms-auto rounded-circle" aria-label="Toggle theme">
+      <span class="material-symbols-rounded">dark_mode</span>
+    </button>
+  </nav>
 
   <!-- Hero -->
   <header class="hero text-center container">
@@ -96,6 +99,11 @@
 
   <!-- Bootstrap Bundle -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Bridge for Pyodide (relative to src/frontend/) -->
+  <script src="../../libs/pyodide/pyodide_setup.js"></script>
+
+  <!-- App logic -->
   <script src="app.js"></script>
 </body>
 </html>
