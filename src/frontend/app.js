@@ -5,21 +5,21 @@ const $ = (sel) => document.querySelector(sel);
 const escapeHTML = (s) => { const d=document.createElement('div'); d.textContent=s ?? ""; return d.innerHTML; };
 const debounce = (fn, ms=300) => { let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; };
 
-// highlight misspelled words with <mark> (XSS-safe: escapes non-word chunks too)
+// highlight misspelled words with <mark> (unicode-smart aware + XSS-safe)
 function highlight(text, missSet) {
   if (!text) return "";
-  const re = /\b([A-Za-z]+(?:'[A-Za-z]+)?(?:-[A-Za-z]+)*)\b/g;
+  const re = /\b([A-Za-z]+(?:['\u2019\u2018][A-Za-z]+)?(?:[-\u2013\u2014][A-Za-z]+)*)\b/g;
+  const normalizeToken = (w) =>
+    w.replace(/[\u2018\u2019]/g, "'").replace(/[\u2013\u2014]/g, "-").toLowerCase();
+
   let out = [], last = 0, m;
   while ((m = re.exec(text))) {
-    // escape everything before the word
     out.push(escapeHTML(text.slice(last, m.index)));
     const word = m[1];
-    const low = word.toLowerCase();
-    // escape the word itself, wrap if misspelled
-    out.push(missSet.has(low) ? `<mark>${escapeHTML(word)}</mark>` : escapeHTML(word));
+    const key = normalizeToken(word);
+    out.push(missSet.has(key) ? `<mark>${escapeHTML(word)}</mark>` : escapeHTML(word));
     last = m.index + word.length;
   }
-  // tail
   out.push(escapeHTML(text.slice(last)));
   return out.join('');
 }
@@ -111,7 +111,6 @@ async function copyOutput(){
   try {
     const text = $("#output")?.textContent ?? "";
     await navigator.clipboard.writeText(text);
-    // show toast if exists (Bootstrap)
     const toastEl = $("#copyToast");
     if (toastEl && window.bootstrap?.Toast) {
       const t = new bootstrap.Toast(toastEl);
@@ -140,6 +139,4 @@ $("#checkBtn")?.addEventListener("click", runCheck);
 $("#clearBtn")?.addEventListener("click", clearAll);
 $("#copyBtn")?.addEventListener("click", copyOutput);
 $("#downloadBtn")?.addEventListener("click", downloadOutput);
-
-// optional: live check while typing (debounced)
 $("#textInput")?.addEventListener("input", debounce(runCheck, 450));
