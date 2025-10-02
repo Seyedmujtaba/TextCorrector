@@ -1,125 +1,145 @@
-const els = {
-  themeToggle: document.getElementById("themeToggle"),
-  input: document.getElementById("textInput"),
-  output: document.getElementById("output"),
-  checkBtn: document.getElementById("checkBtn"),
-  clearBtn: document.getElementById("clearBtn"),
-  copyBtn: document.getElementById("copyBtn"),
-  downloadBtn: document.getElementById("downloadBtn"),
-  errorCount: document.getElementById("errorCount"),
-  loading: document.getElementById("loading"),
-};
+// src/frontend/app.js
 
-let lastCorrectedText = "";
+// ---------- helpers ----------
+const $ = (sel) => document.querySelector(sel);
+const escapeHTML = (s) => { const d=document.createElement('div'); d.textContent=s ?? ""; return d.innerHTML; };
+const debounce = (fn, ms=300) => { let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; };
 
-// Theme toggle
-els.themeToggle.addEventListener("click", () => {
-  document.body.classList.toggle("dark-theme");
-  document.body.classList.toggle("light-theme");
-  const icon = els.themeToggle.querySelector(".material-symbols-rounded");
-  if (document.body.classList.contains("dark-theme")) {
-    icon.textContent = "light_mode";
-  } else {
-    icon.textContent = "dark_mode";
+// highlight misspelled words with <mark> (XSS-safe: escapes non-word chunks too)
+function highlight(text, missSet) {
+  if (!text) return "";
+  const re = /\b([A-Za-z]+(?:'[A-Za-z]+)?(?:-[A-Za-z]+)*)\b/g;
+  let out = [], last = 0, m;
+  while ((m = re.exec(text))) {
+    // escape everything before the word
+    out.push(escapeHTML(text.slice(last, m.index)));
+    const word = m[1];
+    const low = word.toLowerCase();
+    // escape the word itself, wrap if misspelled
+    out.push(missSet.has(low) ? `<mark>${escapeHTML(word)}</mark>` : escapeHTML(word));
+    last = m.index + word.length;
   }
-});
-
-// Busy state
-function setBusy(busy) {
-  [els.checkBtn, els.clearBtn, els.copyBtn, els.downloadBtn].forEach(b => b.disabled = busy);
-  els.loading.classList.toggle("d-none", !busy);
+  // tail
+  out.push(escapeHTML(text.slice(last)));
+  return out.join('');
 }
 
-// Normalize errors
-function normalizeErrors(errors) {
-  if (!errors) return [];
-  if (Array.isArray(errors) && typeof errors[0] === "string") {
-    return errors.map(w => ({ word: w, suggestions: [] }));
-  }
-  if (Array.isArray(errors) && typeof errors[0] === "object") {
-    return errors.map(e => ({ word: e.word || "", suggestions: e.suggestions || [] }));
-  }
-  return [];
+function showLoading(on=true){
+  const el = $("#loading");
+  if (!el) return;
+  if (on) el.classList.remove("d-none"); else el.classList.add("d-none");
+}
+function setErrorCount(n){
+  const el = $("#errorCount");
+  if (el) el.textContent = Number.isFinite(n) ? `${n} issue${n===1?"":"s"}` : "—";
+}
+function setOutputHTML(html){
+  const el = $("#output");
+  if (el) el.innerHTML = html;
 }
 
-// Render output
-function renderCorrected(corrected, errors) {
-  lastCorrectedText = corrected || "";
-  const wrongSet = new Set(errors.map(e => e.word.toLowerCase()));
-  const suggestionMap = {};
-  errors.forEach(e => { suggestionMap[e.word.toLowerCase()] = e.suggestions; });
+// ---------- theme (persist) ----------
+(function initTheme(){
+  const btn = $("#themeToggle");
+  if (!btn) return;
+  const saved = localStorage.getItem("tc-theme");
+  if (saved === "dark") {
+    document.body.classList.remove("light-theme");
+    document.body.classList.add("dark-theme");
+  }
+  btn.addEventListener("click", () => {
+    const dark = document.body.classList.toggle("dark-theme");
+    if (dark) document.body.classList.remove("light-theme");
+    else document.body.classList.add("light-theme");
+    localStorage.setItem("tc-theme", dark ? "dark" : "light");
+  });
+})();
 
-  const tokens = corrected.split(/(\s+)/);
-  const html = tokens.map(tok => {
-    if (!tok.trim()) return tok;
-    const key = tok.toLowerCase();
-    if (wrongSet.has(key)) {
-      const sugg = suggestionMap[key] || [];
-      const title = sugg.length ? `Suggestions: ${sugg.join(", ")}` : "Possible error";
-      return `<span class="highlight-wrong" data-bs-toggle="tooltip" title="${title}">${tok}</span>`;
-    }
-    return tok;
-  }).join("");
+// ---------- pyodide boot ----------
+(async function boot(){
+  try {
+    showLoading(true);
+    await window.pyodideReady; // from pyodide_setup.js
+  } catch (e) {
+    console.error("Pyodide failed to init:", e);
+  } finally {
+    showLoading(false);
+  }
+})();
 
-  els.output.innerHTML = html;
-  els.errorCount.textContent = errors.length > 0 ? `${errors.length} error(s)` : "No errors found";
+// ---------- actions ----------
+async function runCheck() {
+  const inputEl = $("#textInput");
+  const text = inputEl?.value ?? "";
 
-  // init Bootstrap tooltips
-  const triggerList = [].slice.call(els.output.querySelectorAll('[data-bs-toggle="tooltip"]'));
-  triggerList.map(el => new bootstrap.Tooltip(el));
-}
-
-// Clear
-els.clearBtn.addEventListener("click", () => {
-  els.input.value = "";
-  els.output.innerHTML = "";
-  els.errorCount.textContent = "—";
-  lastCorrectedText = "";
-});
-
-// Check
-els.checkBtn.addEventListener("click", async () => {
-  const text = els.input.value.trim();
-  if (!text) {
-    els.output.innerHTML = `<p class="text-danger">Please enter some text!</p>`;
+  if (!text.trim()) {
+    setOutputHTML("");
+    setErrorCount(0);
     return;
   }
-  try {
-    setBusy(true);
-    const res = await fetch("/api/check", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
-    });
-    const data = await res.json();
-    const corrected = data.corrected || text;
-    const errors = normalizeErrors(data.errors);
-    renderCorrected(corrected, errors);
-  } catch (e) {
-    els.output.innerHTML = `<p class="text-danger">Error: ${e.message}</p>`;
-  } finally {
-    setBusy(false);
+
+  if (typeof window.checkText !== "function") {
+    console.error("checkText is not ready yet.");
+    setErrorCount(NaN);
+    return;
   }
-});
 
-// Copy with toast
-const copyToast = new bootstrap.Toast(document.getElementById("copyToast"));
-els.copyBtn.addEventListener("click", async () => {
-  const text = lastCorrectedText || els.input.value || "";
-  if (!text) return;
-  await navigator.clipboard.writeText(text);
-  copyToast.show();
-});
+  showLoading(true);
+  try {
+    const res = await window.checkText(text);
+    const miss = Array.from(new Set((res?.misspelled ?? []).map(w=>w.toLowerCase())));
+    const missSet = new Set(miss);
 
-// Download
-els.downloadBtn.addEventListener("click", () => {
-  const text = lastCorrectedText || els.input.value || "";
-  if (!text) return;
-  const blob = new Blob([text], { type: "text/plain" });
+    setOutputHTML(highlight(text, missSet));
+    setErrorCount(miss.length);
+  } catch (e) {
+    console.error(e);
+    setErrorCount(NaN);
+  } finally {
+    showLoading(false);
+  }
+}
+
+function clearAll(){
+  const inputEl = $("#textInput");
+  if (inputEl) inputEl.value = "";
+  setOutputHTML("");
+  setErrorCount(0);
+}
+
+async function copyOutput(){
+  try {
+    const text = $("#output")?.textContent ?? "";
+    await navigator.clipboard.writeText(text);
+    // show toast if exists (Bootstrap)
+    const toastEl = $("#copyToast");
+    if (toastEl && window.bootstrap?.Toast) {
+      const t = new bootstrap.Toast(toastEl);
+      t.show();
+    }
+  } catch (e) {
+    console.error("Copy failed", e);
+  }
+}
+
+function downloadOutput(){
+  const text = $("#output")?.textContent ?? "";
+  const blob = new Blob([text], {type:"text/plain;charset=utf-8"});
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "textcorrector.txt";
+  a.download = "textcorrector_output.txt";
+  document.body.appendChild(a);
   a.click();
+  a.remove();
   URL.revokeObjectURL(url);
-});
+}
+
+// ---------- wire UI ----------
+$("#checkBtn")?.addEventListener("click", runCheck);
+$("#clearBtn")?.addEventListener("click", clearAll);
+$("#copyBtn")?.addEventListener("click", copyOutput);
+$("#downloadBtn")?.addEventListener("click", downloadOutput);
+
+// optional: live check while typing (debounced)
+$("#textInput")?.addEventListener("input", debounce(runCheck, 450));
