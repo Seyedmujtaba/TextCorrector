@@ -1,1 +1,402 @@
+/* ============================================
+   GLOBAL RESET & BASE STYLES
+   ============================================ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  transition: background 0.5s ease, color 0.5s ease;
+  line-height: 1.6;
+}
+
+/* ============================================
+   THEME BACKGROUNDS 
+   ============================================ */
+.light-theme {
+  background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+  color: #2c2c2c;
+}
+
+.dark-theme {
+  background: linear-gradient(135deg, #141e30 0%, #243b55 100%);
+  color: #e8e8e8;
+}
+
+/* ============================================
+   GLASS MORPHISM COMPONENTS
+   ============================================ */
+.glass {
+  background: rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  box-shadow: 0 8px 32px rgba(252, 182, 159, 0.2);
+}
+
+.dark-theme .glass {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* ============================================
+   NAVIGATION BAR
+   ============================================ */
+.custom-navbar {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.dark-theme .custom-navbar {
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.logo:hover {
+  transform: scale(1.05) rotate(5deg);
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+.btn-glass {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: inherit;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.btn-glass:hover {
+  background: rgba(255, 255, 255, 0.4);
+  transform: translateY(-2px);
+}
+
+.dark-theme .btn-glass {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.dark-theme .btn-glass:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.btn-pill {
+  border-radius: 50px;
+  padding: 0.6rem 1.2rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+  color: #fff;
+  border: none;
+  box-shadow: 0 8px 20px rgba(255, 107, 107, 0.35);
+  transition: all 0.3s ease;
+}
+
+.btn-pill:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 12px 28px rgba(255, 107, 107, 0.45);
+}
+
+.btn-pill:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.dark-theme .btn-pill {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  box-shadow: 0 8px 20px rgba(79, 172, 254, 0.35);
+}
+
+.dark-theme .btn-pill:hover {
+  box-shadow: 0 12px 28px rgba(79, 172, 254, 0.5);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 2px solid rgba(255, 107, 107, 0.6);
+  color: #ff6b6b;
+  border-radius: 50px;
+  transition: all 0.3s ease;
+  font-weight: 600;
+}
+
+.btn-outline:hover {
+  background: rgba(255, 107, 107, 0.15);
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+}
+
+.dark-theme .btn-outline {
+  border-color: rgba(79, 172, 254, 0.6);
+  color: #4facfe;
+}
+
+.dark-theme .btn-outline:hover {
+  background: rgba(79, 172, 254, 0.15);
+  border-color: #4facfe;
+  color: #4facfe;
+}
+
+/* ============================================
+   TEXT STYLES
+   ============================================ */
+.text-gradient {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+.dark-theme .text-gradient {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.highlight-wrong {
+  background: rgba(255, 107, 107, 0.25);
+  border-bottom: 2px dotted #ff6b6b;
+  padding: 0 3px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: help;
+  transition: background 0.2s ease;
+}
+
+.highlight-wrong:hover {
+  background: rgba(255, 107, 107, 0.35);
+}
+
+.dark-theme .highlight-wrong {
+  background: rgba(255, 107, 107, 0.2);
+  border-bottom: 2px dotted #ff8e53;
+}
+
+/* ============================================
+   FORM ELEMENTS
+   ============================================ */
+.modern-textarea {
+  border-radius: 16px;
+  padding: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  color: inherit;
+  font-size: 1rem;
+  width: 100%;
+  transition: all 0.3s ease;
+  resize: vertical;
+}
+
+.modern-textarea:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.4);
+  border-color: #ff6b6b;
+  box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.15);
+}
+
+.modern-textarea::placeholder {
+  color: rgba(44, 44, 44, 0.5);
+}
+
+.dark-theme .modern-textarea {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #e8e8e8;
+}
+
+.dark-theme .modern-textarea:focus {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: #4facfe;
+  box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.2);
+}
+
+.dark-theme .modern-textarea::placeholder {
+  color: rgba(232, 232, 232, 0.5);
+}
+
+/* ============================================
+   OUTPUT BOX
+   ============================================ */
+.output-box {
+  min-height: 120px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  padding: 1.5rem;
+  word-wrap: break-word;
+  line-height: 1.8;
+  transition: all 0.3s ease;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.dark-theme .output-box {
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ============================================
+   HERO SECTION
+   ============================================ */
+.hero {
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.hero h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.hero p {
+  font-size: 1.25rem;
+  opacity: 0.85;
+  color: #555;
+}
+
+.dark-theme .hero p {
+  opacity: 0.8;
+  color: #b8b8b8;
+}
+
+/* ============================================
+   MATERIAL ICONS
+   ============================================ */
+.material-symbols-rounded {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  font-size: 22px;
+  vertical-align: middle;
+}
+
+/* ============================================
+   SPINNER & LOADING
+   ============================================ */
+.spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+  border-width: 0.15em;
+}
+
+.spinner-border {
+  border-color: rgba(255, 107, 107, 0.3);
+  border-right-color: #ff6b6b;
+}
+
+.dark-theme .spinner-border {
+  border-color: rgba(79, 172, 254, 0.3);
+  border-right-color: #4facfe;
+}
+
+/* ============================================
+   TOAST NOTIFICATIONS
+   ============================================ */
+.toast {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* ============================================
+   CARD HOVER EFFECTS
+   ============================================ */
+.card.glass {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card.glass:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 40px rgba(255, 107, 107, 0.2);
+}
+
+.dark-theme .card.glass:hover {
+  box-shadow: 0 12px 40px rgba(79, 172, 254, 0.15);
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+@media (max-width: 768px) {
+  .custom-navbar {
+    padding: 1rem !important;
+  }
+
+  .btn-pill {
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+  }
+
+  .hero h1 {
+    font-size: 1.7rem;
+  }
+
+  .hero p {
+    font-size: 1rem;
+  }
+
+  .card.glass {
+    padding: 1.5rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero {
+    padding: 2rem 1rem;
+  }
+
+  .hero h1 {
+    font-size: 1.5rem;
+  }
+
+  .btn-pill {
+    font-size: 0.85rem;
+    padding: 0.5rem 0.9rem;
+  }
+
+  .modern-textarea {
+    font-size: 0.95rem;
+  }
+
+  .output-box {
+    padding: 1rem;
+    font-size: 0.95rem;
+  }
+}
+
+/* ============================================
+   SMOOTH SCROLLING
+   ============================================ */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+*:focus-visible {
+  outline: 2px solid #ff6b6b;
+  outline-offset: 2px;
+}
+
+.dark-theme *:focus-visible {
+  outline-color: #4facfe;
+}
