@@ -5,11 +5,11 @@ Single-file offline build for TextCorrector (keeps your UI).
 
 - Template: src/frontend/index.html
 - Inlines: style.css, app.js
-- Inlines Python: src/backend/spell_checker.py
-- Adds required modules: src/utils/dict_loader.py, src/utils/text_utils.py
+- Adds Python: src/backend/spell_checker.py
+- Adds required modules: src/utils/__init__.py, src/utils/dict_loader.py, src/utils/text_utils.py
 - Inlines dictionary: libs/dictionary/en_dict.txt
 - Embeds FULL Pyodide dist: libs/pyodide/0.26.1/**
-- Exposes window.checkText(text) for app.js
+- Exposes window.checkText(text) for app.js; returns plain JS object (not PyProxy)
 """
 
 import base64, html, json, re
@@ -23,6 +23,7 @@ CSS_PATH    = ROOT / "src" / "frontend" / "style.css"
 APP_JS_PATH = ROOT / "src" / "frontend" / "app.js"
 
 PY_MAIN     = ROOT / "src" / "backend" / "spell_checker.py"
+PY_UTILS_INIT = ROOT / "src" / "utils" / "__init__.py"
 PY_UTILS1   = ROOT / "src" / "utils" / "dict_loader.py"
 PY_UTILS2   = ROOT / "src" / "utils" / "text_utils.py"
 
@@ -47,15 +48,19 @@ def b64(data: bytes) -> str:
 tpl_html   = read_text(TPL_HTML)
 style_css  = read_text(CSS_PATH)
 app_js     = read_text(APP_JS_PATH)
+
 py_main    = read_text(PY_MAIN)
-py_utils1  = read_text(PY_UTILS1)   # utils/dict_loader.py
-py_utils2  = read_text(PY_UTILS2)   # utils/text_utils.py
+py_utils_init = read_text(PY_UTILS_INIT)
+py_utils1  = read_text(PY_UTILS1)
+py_utils2  = read_text(PY_UTILS2)
+
 dict_text  = read_text(DICT_PATH)
 
-if not tpl_html.strip(): raise SystemExit(f"[X] Missing template: {TPL_HTML}")
-if not py_main.strip():  raise SystemExit(f"[X] Missing Python: {PY_MAIN}")
-if not py_utils1.strip():raise SystemExit(f"[X] Missing util: {PY_UTILS1}")
-if not py_utils2.strip():raise SystemExit(f"[X] Missing util: {PY_UTILS2}")
+if not tpl_html.strip():      raise SystemExit(f"[X] Missing template: {TPL_HTML}")
+if not py_main.strip():       raise SystemExit(f"[X] Missing Python: {PY_MAIN}")
+if not py_utils_init.strip(): raise SystemExit(f"[X] Missing util: {PY_UTILS_INIT}")
+if not py_utils1.strip():     raise SystemExit(f"[X] Missing util: {PY_UTILS1}")
+if not py_utils2.strip():     raise SystemExit(f"[X] Missing util: {PY_UTILS2}")
 if not PYODIDE_DIR.exists():
     raise SystemExit(f"[X] Missing Pyodide dir: {PYODIDE_DIR} (put full 0.26.1 dist here)")
 if not dict_text:
@@ -82,10 +87,11 @@ if not module_choice:
 # ---- Build injectables ----
 inline_style = f"<style>\n{style_css}\n</style>" if style_css else ""
 inline_dict  = f'<script type="text/plain" id="english-dict">{html.escape(dict_text)}</script>'
-inline_py    = f'<script type="text/python" id="spell-checker">\n{py_main}\n</script>'
+inline_py    = f'<script type="text/plain" id="py-backend-spell-checker">{html.escape(py_main)}</script>'
 
-# محتوای دو ماژول utils را در <script type=text/plain> نگه می‌داریم و موقع اجرا روی FS می‌نویسیم
+# utils as plain text blocks (will be written to FS)
 inline_utils = f"""
+<script type="text/plain" id="py-utils-init">{html.escape(py_utils_init)}</script>
 <script type="text/plain" id="py-utils-dict-loader">{html.escape(py_utils1)}</script>
 <script type="text/plain" id="py-utils-text-utils">{html.escape(py_utils2)}</script>
 """
@@ -158,32 +164,49 @@ runtime_js = f"""
 
   const pyodide = await loadPyodide({{ indexURL: "https://offline.local/pyodide/" }});
 
-  // --- نوشتن فایل‌ها روی FS ---
+  // --- نوشتن محتوا روی FS ---
   // 1) دیکشنری
   const dictText = (document.getElementById('english-dict')?.textContent) || '';
-  pyodide.FS.writeFile('en_dict.txt', dictText);
+  pyodide.FS.writeFile('/app/en_dict.txt', dictText);
 
-  // 2) ماژول‌های utils
+  // 2) utils (با __init__.py)
+  const utilInit = (document.getElementById('py-utils-init')?.textContent) || '';
   const utilDict = (document.getElementById('py-utils-dict-loader')?.textContent) || '';
   const utilText = (document.getElementById('py-utils-text-utils')?.textContent) || '';
-  // ساخت پوشه utils و نوشتن فایل‌ها
-  try {{ pyodide.FS.mkdir('utils'); }} catch(_) {{}}
-  pyodide.FS.writeFile('utils/dict_loader.py', utilDict);
-  pyodide.FS.writeFile('utils/text_utils.py', utilText);
+  try {{ pyodide.FS.mkdir('/app'); }} catch(_) {{}}
+  try {{ pyodide.FS.mkdir('/app/utils'); }} catch(_) {{}}
+  pyodide.FS.writeFile('/app/utils/__init__.py', utilInit);
+  pyodide.FS.writeFile('/app/utils/dict_loader.py', utilDict);
+  pyodide.FS.writeFile('/app/utils/text_utils.py', utilText);
 
-  // 3) اجرای پایتون اصلی (که از utils ایمپورت می‌کند)
-  const pyMain = (document.getElementById('spell-checker')?.textContent) || '';
-  await pyodide.runPythonAsync(pyMain);
+  // 3) پایتون اصلی را به‌عنوان ماژول بنویس و ایمپورت کن تا main() اجرا نشود
+  const pyMain = (document.getElementById('py-backend-spell-checker')?.textContent) || '';
+  pyodide.FS.writeFile('/app/spell_checker.py', pyMain);
 
-  // API برای فرانت: window.checkText
+  await pyodide.runPythonAsync(`
+import sys
+if "/app" not in sys.path:
+    sys.path.insert(0, "/app")
+import spell_checker  # defines correct_text without running CLI
+`);
+
+  // 4) API برای فرانت: window.checkText(text) → آبجکت JS ساده
   window.checkText = async (text) => {{
     pyodide.globals.set("js_text", text || "");
-    const result = await pyodide.runPythonAsync(`
+    const pyRes = await pyodide.runPythonAsync(`
 from js import js_text
-ct, mc, miss, fixes = correct_text(js_text, 'en_dict.txt')
+import spell_checker
+ct, mc, miss, fixes = spell_checker.correct_text(js_text, '/app/en_dict.txt')
 {{ "corrected_text": ct, "mistake_count": int(mc), "misspelled": list(miss), "all_fixes": [tuple(p) for p in fixes] }}
 `);
-    return result;
+    // تبدیل PyProxy به آبجکت JS معمولی (dict→Object, list/tuple→Array)
+    const jsRes = pyRes.toJs({{ dict_converter: Object.fromEntries }});
+    if (pyRes.destroy) pyRes.destroy();
+    // اطمینان: اگر به هر دلیل misspelled آرایه نبود، آرایه‌اش کن
+    if (!Array.isArray(jsRes.misspelled)) {{
+      try {{ jsRes.misspelled = Array.from(jsRes.misspelled ?? []); }} catch(_) {{ jsRes.misspelled = []; }}
+    }}
+    return jsRes;
   }};
 
   setStatus('Ready');
@@ -200,7 +223,7 @@ m = re.search(r'</head>', page, flags=re.I)
 page = (page[:m.start()] + inline_style + page[m.start():]) if m else (inline_style + page)
 # حذف <script src="app.js">
 page = re.sub(r'<script[^>]+src=["\'].*?app\\.js["\'][^>]*>\\s*</script>', '', page, flags=re.I)
-# تزریق: دیکشنری + utils + پایتون + pyodide assets + runtime + در پایان خودِ app.js
+# تزریق: دیکشنری + utils + backend + pyodide assets + runtime + در پایان خودِ app.js (event handlers)
 injections = "\n".join([inline_dict, inline_utils, inline_py, assets_js, runtime_js, f"<script>\n{app_js}\n</script>"])
 m = re.search(r'</body>', page, flags=re.I)
 page = (page[:m.start()] + injections + page[m.start():]) if m else (page + injections)
