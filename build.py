@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Single-file offline build for TextCorrector (uses your UI and forces pyodide.js).
+Single-file offline build for TextCorrector.
 
 Fixes:
-- Forces UMD loader (pyodide.js) to avoid dynamic import issues
-- Removes external refs (style.css, app.js, pyodide_setup.js) and inlines them
-- Writes utils package (with __init__.py) into Pyodide FS
-- Returns plain JS object from window.checkText (not PyProxy)
+- Aggressively remove external CSS/JS (style.css, app.js, pyodide_setup.js) and inline them
+- Rewrites pyodide.js to import pyodide.asm.js from a Blob URL (no network / no DNS)
+- Writes utils package (with __init__.py) + backend into Pyodide FS
+- Returns plain JS object from window.checkText (so app.js .map(...) works)
 """
 
 import base64, html, json, re
@@ -28,6 +28,9 @@ PY_UTILS2     = ROOT / "src" / "utils" / "text_utils.py"
 DICT_PATH   = ROOT / "libs" / "dictionary" / "en_dict.txt"
 PYODIDE_DIR = ROOT / "libs" / "pyodide" / "0.26.1"
 
+# اختیاری: اگر لوگو در قالب ارجاع شده و نمی‌خواهی خطای 404 ببینی، این را تنظیم کن
+LOGO_PATH   = ROOT / "static" / "logo.png"
+
 OUT_DIR  = ROOT / "dist"
 OUT_FILE = OUT_DIR / "text-corrector.html"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -46,11 +49,14 @@ def b64(data: bytes) -> str:
 tpl_html   = read_text(TPL_HTML)
 style_css  = read_text(CSS_PATH)
 app_js     = read_text(APP_JS_PATH)
+
 py_main    = read_text(PY_MAIN)
 py_utils_init = read_text(PY_UTILS_INIT)
 py_utils1  = read_text(PY_UTILS1)
 py_utils2  = read_text(PY_UTILS2)
+
 dict_text  = read_text(DICT_PATH)
+logo_bytes = read_bytes(LOGO_PATH) if LOGO_PATH.exists() else b""
 
 if not tpl_html.strip():      raise SystemExit(f"[X] Missing template: {TPL_HTML}")
 if not py_main.strip():       raise SystemExit(f"[X] Missing Python: {PY_MAIN}")
@@ -59,8 +65,7 @@ if not py_utils1.strip():     raise SystemExit(f"[X] Missing util: {PY_UTILS1}")
 if not py_utils2.strip():     raise SystemExit(f"[X] Missing util: {PY_UTILS2}")
 if not PYODIDE_DIR.exists():
     raise SystemExit(f"[X] Missing Pyodide dir: {PYODIDE_DIR} (put full 0.26.1 dist here)")
-if dict_text is None:
-    dict_text = ""
+# dict_text می‌تواند خالی باشد؛ مشکلی نیست.
 
 # ------- Collect Pyodide assets -------
 pyodide_assets, pyodide_by_name = {}, {}
@@ -71,17 +76,15 @@ for p in PYODIDE_DIR.rglob("*"):
         pyodide_assets[rel] = enc
         pyodide_by_name[p.name] = enc
 
-# Force pyodide.js (UMD), fallback to mjs only if js missing
-if "pyodide.js" in pyodide_by_name:
-    module_choice = "pyodide.js"
-elif "pyodide.mjs" in pyodide_by_name:
-    module_choice = "pyodide.mjs"
-else:
-    raise SystemExit("[X] Neither pyodide.js nor pyodide.mjs found in libs/pyodide/0.26.1/")
+# باید هر دو فایل وجود داشته باشند
+if "pyodide.js" not in pyodide_by_name and "pyodide.mjs" not in pyodide_by_name:
+    raise SystemExit("[X] pyodide.js/mjs not found in libs/pyodide/0.26.1/")
+if "pyodide.asm.js" not in pyodide_by_name:
+    raise SystemExit("[X] pyodide.asm.js not found in libs/pyodide/0.26.1/")
 
-# ------- Injectables -------
+# ------- Build injectables -------
 inline_style = f"<style>\n{style_css}\n</style>" if style_css else ""
-inline_dict  = f'<script type="text/plain" id="english-dict">{html.escape(dict_text)}</script>'
+inline_dict  = f'<script type="text/plain" id="english-dict">{html.escape(dict_text or "")}</script>'
 inline_py    = f'<script type="text/plain" id="py-backend-spell-checker">{html.escape(py_main)}</script>'
 inline_utils = f"""
 <script type="text/plain" id="py-utils-init">{html.escape(py_utils_init)}</script>
@@ -93,9 +96,8 @@ assets_js = f"""
 <script>
 const PYODIDE_ASSETS_BY_PATH = {json.dumps(pyodide_assets)};
 const PYODIDE_ASSETS_BY_NAME = {json.dumps(pyodide_by_name)};
-const PYODIDE_MODULE_FILE = {json.dumps(module_choice)};
 
-// --- fetch patch (main + globalThis) ---
+// --- fetch patch ---
 function b64ToBytes(b64) {{
   if (!b64) return new Uint8Array();
   const bin = atob(b64);
@@ -149,41 +151,53 @@ function findAssetForUrl(url) {{
 runtime_js = f"""
 <script>
 (async () => {{
-  // status
   const statusEl = document.getElementById('loading') || document.getElementById('status') || document.querySelector('[data-status]') || null;
   const setStatus = (t) => {{ if (statusEl) statusEl.textContent = t; }};
   setStatus('Initializing Python…');
 
-  // Load pyodide.js (UMD) via Blob to avoid any network
-  const fileB64 = PYODIDE_ASSETS_BY_NAME[PYODIDE_MODULE_FILE];
-  if (!fileB64) {{ setStatus('pyodide.js not found'); return; }}
-  const blob = new Blob([b64ToBytes(fileB64)], {{ type: 'text/javascript' }});
-  const url  = URL.createObjectURL(blob);
+  // 1) آماده‌سازی Blob URL برای pyodide.asm.js
+  const asmB64 = PYODIDE_ASSETS_BY_NAME["pyodide.asm.js"];
+  const asmBlob = new Blob([b64ToBytes(asmB64)], {{ type: 'text/javascript' }});
+  const asmUrl  = URL.createObjectURL(asmBlob);
+
+  // 2) متن pyodide.js را بازنویسی می‌کنیم تا import("pyodide.asm.js") → import(asmUrl) شود
+  const jsName = "pyodide.js" in PYODIDE_ASSETS_BY_NAME ? "pyodide.js" : "pyodide.mjs";
+  let jsText = new TextDecoder().decode(b64ToBytes(PYODIDE_ASSETS_BY_NAME[jsName]));
+  // جایگزینی همهٔ ارجاعات ممکن به pyodide.asm.js
+  jsText = jsText
+    .replace(/import\\((['"`]).*?pyodide\\.asm\\.js\\1\\)/g, 'import("'+asmUrl+'")')
+    .replace(/["'`]pyodide\\.asm\\.js["'`]/g, '"{asmUrl}"'.replace("{{asmUrl}}", asmUrl));
+
+  // 3) pyodide.js بازنویسی‌شده را به‌صورت <script> لود می‌کنیم
+  const jsBlob = new Blob([jsText], {{ type: 'text/javascript' }});
+  const jsUrl  = URL.createObjectURL(jsBlob);
   await new Promise((resolve, reject) => {{
     const s = document.createElement('script');
-    s.src = url; s.onload = resolve; s.onerror = reject;
+    s.src = jsUrl; s.onload = resolve; s.onerror = reject;
     document.head.appendChild(s);
   }});
   const loadPyodide = window.loadPyodide;
   if (typeof loadPyodide !== 'function') {{ setStatus('loadPyodide not available'); return; }}
 
-  // Important: use a fake domain with a dot (not underscore) to avoid module import errors
+  // 4) Pyodide را با indexURL جعلی که fetch-patch پوشش می‌دهد بالا می‌آوریم
   const pyodide = await loadPyodide({{ indexURL: "https://x.local/pyodide/" }});
 
-  // Write files into FS
+  // --- FileSystem setup (/app) ---
   try {{ pyodide.FS.mkdir('/app'); }} catch(_) {{}}
   try {{ pyodide.FS.mkdir('/app/utils'); }} catch(_) {{}}
-  // dictionary
+
+  // dict
   const dictText = (document.getElementById('english-dict')?.textContent) || '';
   pyodide.FS.writeFile('/app/en_dict.txt', dictText);
-  // utils package
+
+  // utils
   pyodide.FS.writeFile('/app/utils/__init__.py', (document.getElementById('py-utils-init')?.textContent) || '');
   pyodide.FS.writeFile('/app/utils/dict_loader.py', (document.getElementById('py-utils-dict-loader')?.textContent) || '');
   pyodide.FS.writeFile('/app/utils/text_utils.py', (document.getElementById('py-utils-text-utils')?.textContent) || '');
-  // backend module
+
+  // backend
   pyodide.FS.writeFile('/app/spell_checker.py', (document.getElementById('py-backend-spell-checker')?.textContent) || '');
 
-  // Make /app importable
   await pyodide.runPythonAsync(`
 import sys
 if "/app" not in sys.path:
@@ -191,7 +205,7 @@ if "/app" not in sys.path:
 import spell_checker
 `);
 
-  // Expose API expected by app.js (return plain JS object)
+  // API for frontend (plain JS object)
   window.checkText = async (text) => {{
     pyodide.globals.set("js_text", text || "");
     const pyRes = await pyodide.runPythonAsync(`
@@ -216,20 +230,23 @@ ct, mc, miss, fixes = spell_checker.correct_text(js_text, "/app/en_dict.txt")
 # ------- Merge into template -------
 page = tpl_html
 
-# 1) remove external style.css
-page = re.sub(r'<link[^>]+href=[\'"][^"\']*style\\.css[\'"][^>]*\\/?>(\\s*)', '', page, flags=re.I)
+# 0) اگر لوگو در HTML ارجاع شده، جایگزینش کنیم (اختیاری)
+if logo_bytes:
+    logo_datauri = "data:image/png;base64," + b64(logo_bytes)
+    page = re.sub(r'(<img[^>]+src=["\'])[^\']*logo\\.png(["\'])', rf'\\1{logo_datauri}\\2', page, flags=re.I)
 
-# 2) remove external app.js
+# 1) حذف همه لینک‌های CSS خارجی (تهاجمی)
+page = re.sub(r'<link[^>]+href=[\'"][^"\']+\\.css[\'"][^>]*\\/?>(\\s*)', '', page, flags=re.I)
+
+# 2) حذف همه اسکریپت‌های خارجی مربوط به app/pyodide_setup
 page = re.sub(r'<script[^>]+src=[\'"][^"\']*app\\.js[\'"][^>]*>\\s*</script>', '', page, flags=re.I)
-
-# 3) remove any pyodide_setup.js refs
 page = re.sub(r'<script[^>]+src=[\'"][^"\']*pyodide_setup\\.js[\'"][^>]*>\\s*</script>', '', page, flags=re.I)
 
-# 4) inline <style> before </head>
+# 3) تزریق <style> قبل از </head>
 m = re.search(r'</head>', page, flags=re.I)
 page = (page[:m.start()] + inline_style + page[m.start():]) if m else (inline_style + page)
 
-# 5) inject dictionary + utils + backend + pyodide assets + runtime + (finally) your app.js
+# 4) تزریق: dict + utils + backend + pyodide assets + runtime + در پایان خودِ app.js
 injections = "\n".join([inline_dict, inline_utils, inline_py, assets_js, runtime_js, f"<script>\n{app_js}\n</script>"])
 m = re.search(r'</body>', page, flags=re.I)
 page = (page[:m.start()] + injections + page[m.start():]) if m else (page + injections)
