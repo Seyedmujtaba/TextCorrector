@@ -14,79 +14,53 @@ Output: dist/text-corrector.html
 import base64
 import html
 import json
-import os
 from pathlib import Path
 
 ROOT = Path(__file__).parent.resolve()
 
-# -------------------- Helpers --------------------
-def read_text(p: Path) -> str:
-    return p.read_text(encoding="utf-8") if p and p.exists() else ""
-
-def read_bytes(p: Path) -> bytes:
-    return p.read_bytes() if p and p.exists() else b""
-
-def b64(data: bytes) -> str:
-    return base64.b64encode(data).decode("ascii")
-
-def find_first(paths):
-    """Return first existing Path from a list of relative strings."""
-    for rel in paths:
-        p = ROOT / rel
-        if p.exists():
-            return p
-    return None
-
-# -------------------- Resolve project files (robust to layout) --------------------
-CSS_PATH = find_first([
-    "static/style.css",
-    "static/theme.css",         # اگر style.css نداشتید
-])
-
-APP_JS_PATH = find_first([
-    "static/app.js",
-])
-
-PYTHON_PATH = find_first([
-    "src/spell_checker.py",
-    "spellchecker/spell_checker.py",
-])
-
-DICT_PATH = find_first([
-    "dictionary/en_dict.txt",
-    "libs/en_dict.txt",
-])
-
-# فول‌دیسـت Pyodide اکسترکت‌شده:
-PYODIDE_DIR = ROOT / "libs" / "pyodide" / "0.26.1"
+# -------------------- Paths (tailored to your repo) --------------------
+CSS_PATH     = ROOT / "src" / "frontend" / "style.css"
+APP_JS_PATH  = ROOT / "src" / "frontend" / "app.js"
+PYTHON_PATH  = ROOT / "src" / "backend" / "spell_checker.py"
+DICT_PATH    = ROOT / "libs" / "dictionary" / "en_dict.txt"
+PYODIDE_DIR  = ROOT / "libs" / "pyodide" / "0.26.1"   # full distribution extracted here
 
 OUT_DIR  = ROOT / "dist"
 OUT_FILE = OUT_DIR / "text-corrector.html"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# -------------------- Sanity checks --------------------
-style_css = read_text(CSS_PATH) if CSS_PATH else ""
-app_js    = read_text(APP_JS_PATH) if APP_JS_PATH else ""
-py_code   = read_text(PYTHON_PATH) if PYTHON_PATH else ""
-dict_text = read_text(DICT_PATH) if DICT_PATH else ""
+# -------------------- Helpers --------------------
+def read_text(p: Path) -> str:
+    return p.read_text(encoding="utf-8") if p.exists() else ""
 
-if not CSS_PATH:
-    print("[!] CSS file not found (looked for static/style.css or static/theme.css). Continuing without CSS.")
-if not APP_JS_PATH:
-    print("[!] app.js not found in static/. Continuing with empty app_js.")
-if not PYTHON_PATH or not py_code.strip():
-    raise SystemExit("[X] Could not find Python source (looked for src/spell_checker.py or spellchecker/spell_checker.py).")
-if not DICT_PATH:
-    print("[!] Dictionary not found (dictionary/en_dict.txt or libs/en_dict.txt). Continuing with empty dictionary.")
-    dict_text = ""
+def read_bytes(p: Path) -> bytes:
+    return p.read_bytes() if p.exists() else b""
+
+def b64(data: bytes) -> str:
+    return base64.b64encode(data).decode("ascii")
+
+# -------------------- Load inputs --------------------
+style_css = read_text(CSS_PATH)
+app_js    = read_text(APP_JS_PATH)
+py_code   = read_text(PYTHON_PATH)
+dict_text = read_text(DICT_PATH)
+
+if not style_css:
+    print(f"[!] CSS not found at {CSS_PATH}. Building without extra CSS.")
+if not app_js:
+    print(f"[!] app.js not found at {APP_JS_PATH}. Building without extra JS.")
+if not py_code.strip():
+    raise SystemExit(f"[X] Python source missing/empty: {PYTHON_PATH}")
+if not dict_text:
+    print(f"[!] Dictionary missing at {DICT_PATH}. Building with empty dictionary.")
 
 if not PYODIDE_DIR.exists():
     raise SystemExit(f"[X] Pyodide dir missing: {PYODIDE_DIR}\n"
-                     "    Put the FULL distribution (0.26.1) extracted here.")
+                     f"    Put the FULL distribution 0.26.1 extracted here.")
 
 # -------------------- Collect Pyodide assets --------------------
-pyodide_assets = {}          # rel path -> b64
-pyodide_by_name = {}         # basename -> b64
+pyodide_assets = {}   # rel path -> b64
+pyodide_by_name = {}  # basename -> b64
 
 for p in PYODIDE_DIR.rglob("*"):
     if p.is_file():
@@ -101,7 +75,7 @@ for name in ("pyodide.mjs", "pyodide.js"):
         module_choice = name
         break
 if not module_choice:
-    raise SystemExit("[X] pyodide.mjs/js not found in your Pyodide folder.")
+    raise SystemExit("[X] pyodide.mjs/js not found inside libs/pyodide/0.26.1/")
 
 # -------------------- HTML skeleton --------------------
 html_head = f"""<!DOCTYPE html>
