@@ -1,21 +1,14 @@
 @echo off
 setlocal
-cd /d "%~dp0"
-
 echo === Using Python ===
-where python
+where python || echo (python not in PATH)
 echo.
-
 echo === Running build.py ===
+REM اگر python کار نکرد، این خط رو فعال کن و بالایی رو کامنت کن:
+REM py -3 "%~dp0build.py" & echo ExitCode: %ERRORLEVEL% & pause & exit /b
+
 python "%~dp0build.py"
-set EC=%ERRORLEVEL%
 echo.
-echo ExitCode: %EC%
-
-echo.
-echo === Dist listing ===
-dir /-c "%~dp0dist"
-
-echo.
-echo Press any key to exit...
-pause >nul
+echo ExitCode: %ERRORLEVEL%
+echo (اگر خطا دیدی، همین پنجره رو عکس بگیر و بفرست)
+pause
