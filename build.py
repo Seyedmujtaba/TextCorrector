@@ -35,24 +35,27 @@ ct, mc, miss, fixes = spell_checker.correct_text(js_text, "/app/en_dict.txt")
     # ------- Merge into template -------
     page = tpl_html
 
-    # Optional logo → data URI
+    # اختیاری: جایگزینی لوگو
     if logo_bytes:
         logo_datauri = "data:image/png;base64," + b64(logo_bytes)
         page = re.sub(r'(<img[^>]+src=["\'])[^\']*logo\\.png(["\'])',
-                      rf'\\1{logo_datauri}\\2', page, flags=re.I|re.S)
+                      rf'\\1{logo_datauri}\\2', page, flags=re.I)
 
-    # Aggressive remove ALL external CSS <link ... .css ...>
-    before = len(page)
-    page = re.sub(r'<link[^>]*href=["\'][^"\']*\\.css[^"\']*["\'][^>]*\/?>(?:\\s*)', '', page, flags=re.I|re.S)
-    print("[LOG] removed CSS tags bytes:", before - len(page))
+    # حذف همه لینک‌های CSS خارجی
+    page_before = page
+    page = re.sub(r'<link[^>]+href=[\'"][^"\']+\\.css[\'"][^>]*\\/?>(\\s*)', '', page, flags=re.I)
+    removed_css = len(page_before) - len(page)
+    print(f"[LOG] removed external CSS bytes: {removed_css}")
 
-    # Remove ANY external script tags that could load app/pyodide (CDN or local paths)
-    before = len(page)
-    page = re.sub(r'<script[^>]*src=["\'][^"\']*(?:app\\.js|pyodide[^"\']*|cdn\\.jsdelivr[^"\']*|googleapis[^"\']*)[^"\']*["\'][^>]*>(?:\\s*</script>)?', '', page, flags=re.I|re.S)
-    print("[LOG] removed external JS tags bytes:", before - len(page))
+    # حذف همه اسکریپت‌های خارجی app.js / pyodide_setup.js
+    page_before = page
+    page = re.sub(r'<script[^>]+src=[\'"][^"\']*app\\.js[\'"][^>]*>\\s*</script>', '', page, flags=re.I)
+    page = re.sub(r'<script[^>]+src=[\'"][^"\']*pyodide_setup\\.js[\'"][^>]*>\\s*</script>', '', page, flags=re.I)
+    removed_js = len(page_before) - len(page)
+    print(f"[LOG] removed external JS bytes: {removed_js}")
 
-    # inline <style> before </head>
-    m = re.search(r'</head>', page, flags=re.I|re.S)
+    # تزریق <style> قبل از </head>
+    m = re.search(r'</head>', page, flags=re.I)
     if m:
         page = page[:m.start()] + (f"{inline_style}\n" if inline_style else "") + page[m.start():]
         print("[LOG] inlined <style>")
@@ -60,9 +63,9 @@ ct, mc, miss, fixes = spell_checker.correct_text(js_text, "/app/en_dict.txt")
         page = (inline_style or "") + page
         print("[LOG] no </head> found; prepended <style>")
 
-    # inject before </body>
+    # تزریق بقیه اسکریپت‌ها قبل از </body>
     injections = "\n".join([inline_dict, inline_utils, inline_py, assets_js, runtime_js, f"<script>\n{app_js}\n</script>"])
-    m = re.search(r'</body>', page, flags=re.I|re.S)
+    m = re.search(r'</body>', page, flags=re.I)
     if m:
         page = page[:m.start()] + injections + page[m.start():]
         print("[LOG] injected scripts before </body>")
