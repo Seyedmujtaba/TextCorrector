@@ -9,9 +9,6 @@ OUT_DIR  = ROOT / "dist"
 OUT_FILE = OUT_DIR / "text-corrector.html"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-_build_ok = False
-_error_msg = None
-
 def read_text(p: Path) -> str:
     return p.read_text(encoding="utf-8") if p.exists() else ""
 
@@ -38,9 +35,8 @@ try:
     if not tpl_html.strip():
         raise RuntimeError(f"Template not found or empty: {TPL_HTML}")
 
-    style_css  = read_text(CSS_PATH)   # optional
+    style_css  = read_text(CSS_PATH)     # optional
     app_js     = read_text(APP_JS_PATH)  # optional
-
     py_main    = read_text(PY_MAIN)
     if not py_main.strip():
         raise RuntimeError(f"Python backend missing: {PY_MAIN}")
@@ -60,56 +56,45 @@ try:
     if py_utils1:    inline_utils += f'\n<script type="text/plain" id="py-utils-dict-loader">{html.escape(py_utils1)}</script>'
     if py_utils2:    inline_utils += f'\n<script type="text/plain" id="py-utils-text-utils">{html.escape(py_utils2)}</script>'
 
+    # --- Start from template and remove external links (safe; replacement ثابت ندارد) ---
     page = tpl_html
-
-    # حذف لینک‌های css خارجی
     page = re.sub(r'<link[^>]*href=["\'][^"\']*\.css[^"\']*["\'][^>]*\/?>', '', page, flags=re.I|re.S)
-    # حذف اسکریپت‌های خارجی app/pyodide
-    page = re.sub(r'<script[^>]*src=["\'][^"\']*(app\.js|pyodide[^"\']*)["\'][^>]*>\s*</script>', '', page, flags=re.I|re.S)
+    page = re.sub(r'<script[^>]*src=["\'][^"\']*(?:app\.js|pyodide[^"\']*)["\'][^>]*>\s*</script>', '', page, flags=re.I|re.S)
 
-    # --- Safe inject before </head> using slicing (NO re.sub in replacement) ---
-    head_match = re.search(r'</head>', page, flags=re.I|re.S)
-    if head_match:
-        i = head_match.start()
+    # --- Inject <style> before </head> via slicing (NO regex replacement) ---
+    m_head = re.search(r'</head>', page, flags=re.I|re.S)
+    if m_head:
+        i = m_head.start()
         page = page[:i] + (inline_style or "") + "\n" + page[i:]
-        print("[LOG] inlined <style> via slicing")
     else:
         page = (inline_style or "") + page
-        print("[LOG] no </head>; prepended <style>")
 
     # --- Prepare bottom injections ---
     injections = "\n".join([inline_dict, inline_utils, inline_py, f"<script>\n{app_js}\n</script>"])
 
-    # --- Safe inject before </body> using slicing (NO re.sub in replacement) ---
-    body_match = re.search(r'</body>', page, flags=re.I|re.S)
-    if body_match:
-        j = body_match.start()
+    # --- Inject before </body> via slicing (NO regex replacement) ---
+    m_body = re.search(r'</body>', page, flags=re.I|re.S)
+    if m_body:
+        j = m_body.start()
         page = page[:j] + injections + "\n" + page[j:]
-        print("[LOG] injected blocks via slicing before </body>")
     else:
         page = page + injections
-        print("[LOG] no </body>; appended blocks")
 
     OUT_FILE.write_text(page, encoding="utf-8")
-    _build_ok = True
     print(f"[OK] Built (minimal): {OUT_FILE}")
-
+    print("[NOTE] این نسخه فقط تضمین می‌کند فایل ساخته بشه و خطای bad escape حذف بشه. اگر ساخت OK بود، می‌ریم سراغ نسخهٔ کامل Pyodide.")
 except Exception as e:
-    _error_msg = f"{type(e).__name__}: {e}\n\n{traceback.format_exc()}"
-    print("[BUILD ERROR]\n", _error_msg)
-
-finally:
-    if not OUT_FILE.exists():
-        placeholder = f"""<!doctype html>
+    # اگر باز هم هر خطایی رخ داد، حداقل یک فایل placeholder بسازیم
+    msg = f"{type(e).__name__}: {e}\n\n{traceback.format_exc()}"
+    placeholder = f"""<!doctype html>
 <html lang="en"><meta charset="utf-8">
 <title>Build Placeholder</title>
 <body style="font-family:system-ui;max-width:920px;margin:40px auto;line-height:1.5">
   <h1>TextCorrector – Build Placeholder</h1>
-  <p>بیلد به خطا خورد، اما این خروجی موقت نوشته شد تا بدانیم نوشتن در <code>dist/</code> کار می‌کند.</p>
-  <h3>پیام/خطا</h3>
-  <pre style="white-space:pre-wrap;background:#f7f7f7;border:1px solid #ddd;padding:12px;border-radius:8px">{html.escape(_error_msg or "No error captured, but OUT_FILE didn’t exist.")}</pre>
+  <p>بیلد به خطا خورد؛ این خروجی موقت فقط برای اطمینان از نوشتن فایل است.</p>
+  <h3>خطا</h3>
+  <pre style="white-space:pre-wrap;background:#f7f7f7;border:1px solid #ddd;padding:12px;border-radius:8px">{html.escape(msg)}</pre>
 </body></html>"""
-        OUT_FILE.write_text(placeholder, encoding="utf-8")
-        print(f"[WROTE PLACEHOLDER] {OUT_FILE}")
-    else:
-        print(f"[DONE] OUT_FILE size: {OUT_FILE.stat().st_size} bytes")
+    OUT_FILE.write_text(placeholder, encoding="utf-8")
+    print(f"[PLACEHOLDER WRITTEN] {OUT_FILE}")
+    sys.exit(1)
