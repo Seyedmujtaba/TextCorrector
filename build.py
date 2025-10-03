@@ -3,12 +3,13 @@
 """
 Builds a SINGLE-FILE offline HTML for TextCorrector using your own UI template.
 
-- Takes src/frontend/index.html as the template (keeps your exact design)
+- Template: src/frontend/index.html (keeps your exact design)
 - Inlines CSS (src/frontend/style.css) and removes external <link>
 - Inlines JS (src/frontend/app.js) and removes external <script src>
 - Inlines Python (src/backend/spell_checker.py) and dictionary (libs/dictionary/en_dict.txt)
-- Embeds the FULL Pyodide distribution (libs/pyodide/0.26.1/*) as base64
-- Patches fetch() so Pyodide loads from the embedded bytes (no network)
+- Embeds FULL Pyodide dist (libs/pyodide/0.26.1/*) as base64
+- Patches fetch() so Pyodide loads from embedded bytes (no network)
+- Exposes window.checkText(text) for app.js handlers
 
 Output: dist/text-corrector.html
 """
@@ -54,14 +55,14 @@ py_code   = read_text(PY_PATH)
 dict_text = read_text(DICT_PATH)
 
 if not style_css:
-    print(f"[!] CSS missing at {CSS_PATH}; page will use built-in styles only if any.")
+    print(f"[!] CSS missing at {CSS_PATH}; building without extra CSS.")
 if not app_js:
-    print(f"[!] app.js missing at {APP_JS_PATH}; only minimal wiring will run.")
+    print(f"[!] app.js missing at {APP_JS_PATH}; page will lack UI handlers.")
 if not py_code.strip():
     raise SystemExit(f"[X] Python code missing/empty: {PY_PATH}")
-if not dict_text:
-    print(f"[!] Dictionary missing at {DICT_PATH}; proceeding with empty dictionary.")
+if dict_text is None:
     dict_text = ""
+    print(f"[!] Dictionary missing at {DICT_PATH}; proceeding with empty dictionary.")
 
 if not PYODIDE_DIR.exists():
     raise SystemExit(f"[X] Pyodide dir missing: {PYODIDE_DIR}\n"
@@ -144,16 +145,16 @@ window.fetch = async function(input, init) {{
 </script>
 """
 
-# NOTE: اگر امضای تابع پایتون‌ت فرق داره، فقط همین یک جا را عوض کن.
+# NOTE: اگر امضای تابع پایتونت فرق داره، فقط همین یک نقطه را عوض کن (داخل رشته‌ی پایتون).
 runtime_js = f"""
 <script>
 (async () => {{
-  // وضعیت
-  const statusEl = document.getElementById('status') || document.querySelector('[data-status]') || (document.createElement('span'));
+  // وضعیت/پیام
+  const statusEl = document.getElementById('status') || document.querySelector('[data-status]') || null;
   const setStatus = (t) => {{ if (statusEl) statusEl.textContent = t; }};
   setStatus('Initializing Python…');
 
-  // pyodide module via blob
+  // load pyodide module from blob
   const modB64 = PYODIDE_ASSETS_BY_NAME[PYODIDE_MODULE_FILE];
   if (!modB64) {{ setStatus('Pyodide module not found.'); return; }}
   const modBlob = new Blob([b64ToBytes(modB64)], {{ type: 'text/javascript' }});
@@ -174,56 +175,27 @@ runtime_js = f"""
 
   const pyodide = await loadPyodide({{ indexURL: "https://offline.local/pyodide/" }});
 
-  // dictionary into FS
+  // put dictionary into FS
   const dictNode = document.getElementById('english-dict');
   const dictText = dictNode ? dictNode.textContent : '';
   pyodide.FS.writeFile('en_dict.txt', dictText || '');
 
-  // run inline Python
+  // run inline Python (defines correct_text)
   const pyNode = document.getElementById('spell-checker');
   await pyodide.runPythonAsync(pyNode ? pyNode.textContent : "");
 
-  // Wire UI: سعی می‌کنیم عناصر را هوشمند پیدا کنیم تا با UI شما جور شود
-  const input = document.querySelector('#input, textarea, [data-input]') || document.createElement('textarea');
-  const output = document.querySelector('#output, [data-output]') || document.createElement('div');
-  const checkBtn = document.querySelector('#checkBtn, [data-check], button.check');
-  const clearBtn = document.querySelector('#clearBtn, [data-clear], button.clear');
-
-  if (clearBtn) {{
-    clearBtn.addEventListener('click', () => {{
-      if (input) input.value = '';
-      if (output) output.innerHTML = '';
-      setStatus('Cleared');
-    }});
-  }}
-
-  if (checkBtn) {{
-    checkBtn.addEventListener('click', async () => {{
-      try {{
-        setStatus('Checking…');
-        pyodide.globals.set("input_text", input ? input.value : "");
-        const result = await pyodide.runPythonAsync(`
-from js import input_text
-res = check_text(input_text, 'en_dict.txt')
-res
+  // >>> EXPOSE API expected by your frontend: window.checkText(text)
+  window.checkText = async (text) => {{
+    pyodide.globals.set("js_text", text || "");
+    const result = await pyodide.runPythonAsync(`
+from js import js_text
+ct, mc, miss, fixes = correct_text(js_text, 'en_dict.txt')
+{{ "corrected_text": ct, "mistake_count": int(mc), "misspelled": list(miss), "all_fixes": [tuple(p) for p in fixes] }}
 `);
-        if (output) {{
-          if (Array.isArray(result)) {{
-            output.innerHTML = result.map(x => '<mark>'+String(x)+'</mark>').join(' ');
-          }} else {{
-            output.textContent = String(result);
-          }}
-        }}
-        setStatus('Done');
-      }} catch (e) {{
-        console.error(e);
-        setStatus('Error: ' + (e && e.message ? e.message : String(e)));
-      }}
-    }});
-  }}
+    return result;
+  }};
 
   setStatus('Ready');
-  if (checkBtn) checkBtn.disabled = false;
 }})();
 </script>
 """
@@ -234,23 +206,23 @@ page = tpl_html
 # 1) حذف لینک استایل خارجی (چون این‌لاین می‌کنیم)
 page = re.sub(r'<link[^>]+href=["\'].*?style\\.css["\'][^>]*>', '', page, flags=re.I)
 
-# 2) تزریق <style> قبل از </head> (اگر head وجود دارد)
-if "</head>" in page.lower():
-    # پیدا کردن نسخه‌ی حساس به حروف
-    head_close_idx = page.lower().rfind("</head>")
-    page = page[:head_close_idx] + (inline_style or "") + page[head_close_idx:]
+# 2) تزریق <style> قبل از </head>
+m = re.search(r'</head>', page, flags=re.I)
+if m:
+    i = m.start()
+    page = page[:i] + (f"{inline_style}\n" if inline_style else "") + page[i:]
 else:
-    # اگر head نداریم، استایل را ابتدای صفحه می‌گذاریم
     page = (inline_style or "") + page
 
 # 3) حذف <script src="app.js"> (چون این‌لاین می‌کنیم)
 page = re.sub(r'<script[^>]+src=["\'].*?app\\.js["\'][^>]*>\\s*</script>', '', page, flags=re.I)
 
-# 4) تزریق دیکشنری و کد پایتون و Pyodide-Assets و Runtime قبل از </body>
+# 4) تزریق دیکشنری، کد پایتون، Pyodide assets و runtime + در نهایت app.js (که از window.checkText استفاده کند)
 injections = "\n".join([inline_dict, inline_py, assets_js, runtime_js, f"<script>\n{app_js}\n</script>"])
-if "</body>" in page.lower():
-    body_close_idx = page.lower().rfind("</body>")
-    page = page[:body_close_idx] + injections + page[body_close_idx:]
+m = re.search(r'</body>', page, flags=re.I)
+if m:
+    i = m.start()
+    page = page[:i] + injections + page[i:]
 else:
     page = page + injections
 
