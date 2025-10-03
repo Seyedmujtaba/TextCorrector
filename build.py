@@ -19,7 +19,7 @@ PY_UTILS2     = ROOT / "src" / "utils" / "text_utils.py"
 
 DICT_PATH   = ROOT / "libs" / "dictionary" / "en_dict.txt"
 PYODIDE_DIR = ROOT / "libs" / "pyodide" / "0.26.1"
-LOGO_PATH   = ROOT / "static" / "logo.png"  # اختیاری
+LOGO_PATH   = ROOT / "static" / "logo.png"  # optional
 
 OUT_DIR  = ROOT / "dist"
 OUT_FILE = OUT_DIR / "text-corrector.html"
@@ -73,10 +73,10 @@ try:
             pyodide_by_name[p.name] = pyodide_assets[rel]
             count += 1
     print(f"[OK] collected {count} pyodide files")
-
-    # sanity
-    for need in ("pyodide.js", "pyodide.mjs", "pyodide.asm.js", "python_stdlib.zip"):
-        print(f"[CHECK] has {need}:", need in pyodide_by_name)
+    print("[CHECK] has pyodide.js:", "pyodide.js" in pyodide_by_name)
+    print("[CHECK] has pyodide.mjs:", "pyodide.mjs" in pyodide_by_name)
+    print("[CHECK] has pyodide.asm.js:", "pyodide.asm.js" in pyodide_by_name)
+    print("[CHECK] has python_stdlib.zip:", "python_stdlib.zip" in pyodide_by_name)
 
     if "pyodide.asm.js" not in pyodide_by_name:
         fail("pyodide.asm.js not found in libs/pyodide/0.26.1/")
@@ -223,27 +223,25 @@ ct, mc, miss, fixes = spell_checker.correct_text(js_text, "/app/en_dict.txt")
     # ------- Merge into template -------
     page = tpl_html
 
-    # اختیاری: جایگزینی لوگو
+    # Optional logo → data URI
     if logo_bytes:
         logo_datauri = "data:image/png;base64," + b64(logo_bytes)
         page = re.sub(r'(<img[^>]+src=["\'])[^\']*logo\\.png(["\'])',
-                      rf'\\1{logo_datauri}\\2', page, flags=re.I)
+                      rf'\\1{logo_datauri}\\2', page, flags=re.I|re.S)
 
-    # حذف همه لینک‌های CSS خارجی
-    page_before = page
-    page = re.sub(r'<link[^>]+href=[\'"][^"\']+\\.css[\'"][^>]*\\/?>(\\s*)', '', page, flags=re.I)
-    removed_css = len(page_before) - len(page)
-    print(f"[LOG] removed external CSS bytes: {removed_css}")
+    # Aggressive removal of ALL external CSS links (any .css, including preload)
+    before = len(page)
+    page = re.sub(r'<link[^>]*href=["\'][^"\']*\\.css[^"\']*["\'][^>]*>', '', page, flags=re.I|re.S)
+    print("[LOG] removed CSS tags bytes:", before - len(page))
 
-    # حذف همه اسکریپت‌های خارجی app.js / pyodide_setup.js
-    page_before = page
-    page = re.sub(r'<script[^>]+src=[\'"][^"\']*app\\.js[\'"][^>]*>\\s*</script>', '', page, flags=re.I)
-    page = re.sub(r'<script[^>]+src=[\'"][^"\']*pyodide_setup\\.js[\'"][^>]*>\\s*</script>', '', page, flags=re.I)
-    removed_js = len(page_before) - len(page)
-    print(f"[LOG] removed external JS bytes: {removed_js}")
+    # Remove any external scripts that might exist for app.js or pyodide setup
+    before = len(page)
+    page = re.sub(r'<script[^>]*src=["\'][^"\']*app\\.js[^"\']*["\'][^>]*>\\s*</script>', '', page, flags=re.I|re.S)
+    page = re.sub(r'<script[^>]*src=["\'][^"\']*pyodide[^"\']*["\'][^>]*>\\s*</script>', '', page, flags=re.I|re.S)
+    print("[LOG] removed external JS tags bytes:", before - len(page))
 
-    # تزریق <style> قبل از </head>
-    m = re.search(r'</head>', page, flags=re.I)
+    # Inject <style> before </head>
+    m = re.search(r'</head>', page, flags=re.I|re.S)
     if m:
         page = page[:m.start()] + (f"{inline_style}\n" if inline_style else "") + page[m.start():]
         print("[LOG] inlined <style>")
@@ -251,9 +249,9 @@ ct, mc, miss, fixes = spell_checker.correct_text(js_text, "/app/en_dict.txt")
         page = (inline_style or "") + page
         print("[LOG] no </head> found; prepended <style>")
 
-    # تزریق بقیه اسکریپت‌ها قبل از </body>
+    # Inject scripts before </body>
     injections = "\n".join([inline_dict, inline_utils, inline_py, assets_js, runtime_js, f"<script>\n{app_js}\n</script>"])
-    m = re.search(r'</body>', page, flags=re.I)
+    m = re.search(r'</body>', page, flags=re.I|re.S)
     if m:
         page = page[:m.start()] + injections + page[m.start():]
         print("[LOG] injected scripts before </body>")
