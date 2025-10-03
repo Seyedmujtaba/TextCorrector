@@ -77,7 +77,6 @@ try:
     print("[CHECK] has pyodide.mjs:", "pyodide.mjs" in pyodide_by_name)
     print("[CHECK] has pyodide.asm.js:", "pyodide.asm.js" in pyodide_by_name)
     print("[CHECK] has python_stdlib.zip:", "python_stdlib.zip" in pyodide_by_name)
-
     if "pyodide.asm.js" not in pyodide_by_name:
         fail("pyodide.asm.js not found in libs/pyodide/0.26.1/")
 
@@ -229,18 +228,17 @@ ct, mc, miss, fixes = spell_checker.correct_text(js_text, "/app/en_dict.txt")
         page = re.sub(r'(<img[^>]+src=["\'])[^\']*logo\\.png(["\'])',
                       rf'\\1{logo_datauri}\\2', page, flags=re.I|re.S)
 
-    # Aggressive removal of ALL external CSS links (any .css, including preload)
+    # **Aggressive** remove ALL external CSS <link ... .css ...>
     before = len(page)
-    page = re.sub(r'<link[^>]*href=["\'][^"\']*\\.css[^"\']*["\'][^>]*>', '', page, flags=re.I|re.S)
+    page = re.sub(r'<link[^>]*href=["\'][^"\']*\\.css[^"\']*["\'][^>]*\/?>(?:\\s*)', '', page, flags=re.I|re.S)
     print("[LOG] removed CSS tags bytes:", before - len(page))
 
-    # Remove any external scripts that might exist for app.js or pyodide setup
+    # Remove ANY external script tags that could load app/pyodide (CDN or local paths)
     before = len(page)
-    page = re.sub(r'<script[^>]*src=["\'][^"\']*app\\.js[^"\']*["\'][^>]*>\\s*</script>', '', page, flags=re.I|re.S)
-    page = re.sub(r'<script[^>]*src=["\'][^"\']*pyodide[^"\']*["\'][^>]*>\\s*</script>', '', page, flags=re.I|re.S)
+    page = re.sub(r'<script[^>]*src=["\'][^"\']*(?:app\\.js|pyodide[^"\']*|cdn\\.jsdelivr[^"\']*|googleapis[^"\']*)[^"\']*["\'][^>]*>(?:\\s*</script>)?', '', page, flags=re.I|re.S)
     print("[LOG] removed external JS tags bytes:", before - len(page))
 
-    # Inject <style> before </head>
+    # inline <style> before </head>
     m = re.search(r'</head>', page, flags=re.I|re.S)
     if m:
         page = page[:m.start()] + (f"{inline_style}\n" if inline_style else "") + page[m.start():]
@@ -249,7 +247,7 @@ ct, mc, miss, fixes = spell_checker.correct_text(js_text, "/app/en_dict.txt")
         page = (inline_style or "") + page
         print("[LOG] no </head> found; prepended <style>")
 
-    # Inject scripts before </body>
+    # inject before </body>
     injections = "\n".join([inline_dict, inline_utils, inline_py, assets_js, runtime_js, f"<script>\n{app_js}\n</script>"])
     m = re.search(r'</body>', page, flags=re.I|re.S)
     if m:
