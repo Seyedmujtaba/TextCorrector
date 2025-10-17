@@ -32,7 +32,6 @@ def fix_special_cases(text):
     for word in words:
         fixed = word
 
-        # Fix incorrect double apostrophes
         fixed = re.sub(r"[‘’]{2,}", "’", fixed)
         fixed = re.sub(r"[']{2,}", "’", fixed)
 
