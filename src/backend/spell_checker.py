@@ -55,18 +55,18 @@ def correct_text(text, dict_path):
         misspelled_words (list)
         all_fixes (list of tuples): (wrong_word, corrected_word)
     """
-    # Step 1: fix things like don’’t → don’t
+    
     text, quote_fixes = fix_special_cases(text)
 
-    # Step 2: normalize
+    # Normalize
     text = clean_spaces(text)
     text = to_lowercase(text)
     words = split_words(text)
 
-    # Step 3: load dictionary
+    # Load dictionary
     dictionary = load_dictionary(dict_path)
 
-    # Step 4: spell checking
+    # Spell checking
     spell = SpellChecker()
     spell.word_frequency.load_words(dictionary)
     misspelled = spell.unknown(words)
@@ -130,7 +130,7 @@ def main():
     if all_fixes:
         print("\n=== Corrections ===")
         for wrong, fixed in all_fixes:
-            print(f"❌ {wrong} → ✅ {fixed}")
+            print(f"{wrong} → {fixed}")
 
     if args.show_words:
         print("\n=== Tokens ===")
