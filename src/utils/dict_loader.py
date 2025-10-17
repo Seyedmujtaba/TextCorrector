@@ -14,7 +14,6 @@ def load_dictionary(file_path):
     words = set()
     
     try:
-        #Open the dictionary file with UTF-8 encoding
         with open(file_path, 'r', encoding='utf-8') as file:
             for line in file:
                 #Remove leading/trailing whitespaces and convert to lowercase
