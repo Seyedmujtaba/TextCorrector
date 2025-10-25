@@ -1,12 +1,12 @@
 # spell_checker.py
-
+#written by Ayla Rasouli
 import os
 import sys
 import argparse
 import re
 from spellchecker import SpellChecker
-from utils.dict_loader import load_dictionary
-from utils.text_utils import to_lowercase, split_words, clean_spaces, join_words
+from .utils.dict_loader import load_dictionary
+from .utils.text_utils import to_lowercase, split_words, clean_spaces, join_words
 
 
 def _default_dict_path():

@@ -1,17 +1,35 @@
-// src/frontend/app.js
-
-// ---------- helpers ----------
 const $ = (sel) => document.querySelector(sel);
 const escapeHTML = (s) => { const d=document.createElement('div'); d.textContent=s ?? ""; return d.innerHTML; };
 const debounce = (fn, ms=300) => { let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; };
-
-// highlight misspelled words with <mark> (unicode-smart aware + XSS-safe)
+function normalizeToken(w) {
+  return w.replace(/[\u2018\u2019]/g, "'").replace(/[\u2013\u2014]/g, "-").toLowerCase();
+}
+function preserveCase(orig, repl) {
+  if (!repl) return orig;
+  if (orig.toUpperCase() === orig) return repl.toUpperCase();
+  if (orig[0] === orig[0].toUpperCase() && orig.slice(1).toLowerCase() === orig.slice(1)) return repl[0].toUpperCase() + repl.slice(1).toLowerCase();
+  return repl;
+}
+function buildCorrected(text, suggestionsMap) {
+  if (!text) return "";
+  const re = /\b([A-Za-z]+(?:['\u2019\u2018][A-Za-z]+)?(?:[-\u2013\u2014][A-Za-z]+)*)\b/g;
+  let out = [], last = 0, m;
+  while ((m = re.exec(text))) {
+    const token = m[0];
+    const key = normalizeToken(token);
+    const sug = suggestionsMap?.[key];
+    let replacement = token;
+    if (typeof sug === "string" && sug.length > 0) replacement = preserveCase(token, sug);
+    out.push(text.slice(last, m.index), replacement);
+    last = m.index + token.length;
+  }
+  out.push(text.slice(last));
+  return out.join("");
+}
 function highlight(text, missSet) {
   if (!text) return "";
   const re = /\b([A-Za-z]+(?:['\u2019\u2018][A-Za-z]+)?(?:[-\u2013\u2014][A-Za-z]+)*)\b/g;
-  const normalizeToken = (w) =>
-    w.replace(/[\u2018\u2019]/g, "'").replace(/[\u2013\u2014]/g, "-").toLowerCase();
-
+  const normalizeToken = (w) => w.replace(/[\u2018\u2019]/g, "'").replace(/[\u2013\u2014]/g, "-").toLowerCase();
   let out = [], last = 0, m;
   while ((m = re.exec(text))) {
     out.push(escapeHTML(text.slice(last, m.index)));
@@ -23,23 +41,20 @@ function highlight(text, missSet) {
   out.push(escapeHTML(text.slice(last)));
   return out.join('');
 }
-
-function showLoading(on=true){
+function showLoading(on = true) {
   const el = $("#loading");
   if (!el) return;
   if (on) el.classList.remove("d-none"); else el.classList.add("d-none");
 }
-function setErrorCount(n){
+function setErrorCount(n) {
   const el = $("#errorCount");
-  if (el) el.textContent = Number.isFinite(n) ? `${n} issue${n===1?"":"s"}` : "—";
+  if (el) el.textContent = Number.isFinite(n) ? `${n} issue${n === 1 ? "" : "s"}` : "—";
 }
-function setOutputHTML(html){
+function setOutputHTML(html) {
   const el = $("#output");
   if (el) el.innerHTML = html;
 }
-
-// ---------- theme (persist) ----------
-(function initTheme(){
+(function initTheme() {
   const btn = $("#themeToggle");
   if (!btn) return;
   const saved = localStorage.getItem("tc-theme");
@@ -49,49 +64,41 @@ function setOutputHTML(html){
   }
   btn.addEventListener("click", () => {
     const dark = document.body.classList.toggle("dark-theme");
-    if (dark) document.body.classList.remove("light-theme");
-    else document.body.classList.add("light-theme");
+    if (dark) document.body.classList.remove("light-theme"); else document.body.classList.add("light-theme");
     localStorage.setItem("tc-theme", dark ? "dark" : "light");
   });
 })();
-
-// ---------- pyodide boot ----------
-(async function boot(){
+(async function boot() {
   try {
     showLoading(true);
-    await window.pyodideReady; // from pyodide_setup.js
+    await window.pyodideReady;
   } catch (e) {
     console.error("Pyodide failed to init:", e);
   } finally {
     showLoading(false);
   }
 })();
-
-// ---------- actions ----------
 async function runCheck() {
   const inputEl = $("#textInput");
   const text = inputEl?.value ?? "";
-
   if (!text.trim()) {
     setOutputHTML("");
     setErrorCount(0);
     return;
   }
-
   if (typeof window.checkText !== "function") {
     console.error("checkText is not ready yet.");
     setErrorCount(NaN);
     return;
   }
-
   showLoading(true);
   try {
     const res = await window.checkText(text);
-    const miss = Array.from(new Set((res?.misspelled ?? []).map(w=>w.toLowerCase())));
-    const missSet = new Set(miss);
-
-    setOutputHTML(highlight(text, missSet));
-    setErrorCount(miss.length);
+    const miss = new Set(res?.misspelled ?? []);
+    const suggestions = res?.suggestions ?? {};
+    const corrected = res?.corrected || buildCorrected(text, suggestions);
+    setOutputHTML(escapeHTML(corrected));
+    setErrorCount(miss.size);
   } catch (e) {
     console.error(e);
     setErrorCount(NaN);
@@ -99,15 +106,13 @@ async function runCheck() {
     showLoading(false);
   }
 }
-
-function clearAll(){
+function clearAll() {
   const inputEl = $("#textInput");
   if (inputEl) inputEl.value = "";
   setOutputHTML("");
   setErrorCount(0);
 }
-
-async function copyOutput(){
+async function copyOutput() {
   try {
     const text = $("#output")?.textContent ?? "";
     await navigator.clipboard.writeText(text);
@@ -120,10 +125,9 @@ async function copyOutput(){
     console.error("Copy failed", e);
   }
 }
-
-function downloadOutput(){
+function downloadOutput() {
   const text = $("#output")?.textContent ?? "";
-  const blob = new Blob([text], {type:"text/plain;charset=utf-8"});
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -133,10 +137,7 @@ function downloadOutput(){
   a.remove();
   URL.revokeObjectURL(url);
 }
-
-// ---------- wire UI ----------
 $("#checkBtn")?.addEventListener("click", runCheck);
 $("#clearBtn")?.addEventListener("click", clearAll);
 $("#copyBtn")?.addEventListener("click", copyOutput);
 $("#downloadBtn")?.addEventListener("click", downloadOutput);
-$("#textInput")?.addEventListener("input", debounce(runCheck, 450));

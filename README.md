@@ -4,46 +4,49 @@ TextCorrector is a simple web-based spell checker for English texts that runs di
 
 ## Features
 
-- Runs directly in the browser
-- Detects and highlights spelling mistakes
-- Provides correction suggestions
-- Clear button to reset input/output boxes
-- Supports Dark Mode and Light Mode
-- Simple UI with smooth animations
+- Runs locally on your computer — no internet or installation required  
+- Detects and highlights spelling mistakes in English text  
+- Provides accurate correction suggestions  
+- Simple and clean graphical interface  
+- Fast processing and lightweight build  
+- Ready-to-use: just download and run `run.bat`
+
 
 ## Tech Stack
 
-- HTML, CSS, JavaScript (frontend)
-- Python (via Pyodide, runs in-browser)
-- Built-in English dictionary
+- **Python 3.9+** — core spell-checking logic  
+- **HTML, CSS, JavaScript** — user interface  
+- **Local execution** (runs directly on your computer)  
+- **Build scripts:** `build.py`, `run_app.py`, `run.bat`, and `CMakeLists.txt`
+
 
 ## Usage
 
-1. Clone or download the repository.
-2. Open `static/index.html` in any modern browser (double-click the file). It runs offline from your filesystem; no server is required.
-3. Enter English text in the input box.
-4. Click the check button to see highlighted errors and suggestions.
+1. Download the latest version of **TextCorrector** from the [Releases](../../releases) page.
+2. Extract the downloaded ZIP file.
+3. Double-click on **`run.bat`** to start the application.
+4. Enter your text in the input box.
+5. Receive the corrected text instantly.
+
 
 ## Project Structure
 
 TextCorrector/
-├── README.md
-├── libs/ # Additional resources (e.g., dictionaries)
-├── scripts/ # Setup scripts (e.g., Pyodide bootstrap)
-│ └── pyodide_setup.js
-├── src/ # Python source code (spell checker logic)
-│ └── spell_checker.py
-└── static/ # Web UI files
-├── index.html # Main entry point
-├── style.css # Stylesheet
-└── app.js # Frontend logic
+├── README.md                # Project documentation
+├── build.py                 # Build script to generate the final package
+├── run_app.py               # Main Python entry point
+├── run.bat                  # Windows launcher
+├── CMakeLists.txt           # Build configuration (if compiled parts exist)
+├── static/                  # Web UI (HTML, CSS, JS)
+│   ├── index.html
+│   ├── style.css
+│   └── app.js
+└── libs/                    # Dictionaries or other resources (optional)
+
 
 ## Build & Releases
 
-The project can be used directly by opening `static/index.html`, but for end-users we also provide a **single-file offline build**.
-
-- Developers: run `python3 build.py` to generate the bundled file at `dist/text-corrector.html`.
-- End-users: simply download the latest release from [Releases](../../releases) and double-click `text-corrector.html` to run it offline in your browser.
+This project can be run directly after download — no installation required.
 
 ## Future Improvements
 
@@ -51,10 +54,9 @@ The project can be used directly by opening `static/index.html`, but for end-use
 - User-defined custom dictionaries
 - Enhanced UI/UX with better inline suggestions
 
----
 
-Developers:
+## Developers
 
-- Seyedmujtaba Tabatabaee
-- Ayla Rasouli
-- Negin Khoshdel
+- [Seyedmujtaba Tabatabaee](https://github.com/Seyedmujtaba)
+- [Ayla Rasouli](https://github.com/aylarasouli)
+- [Negin Khoshdel](https://github.com/neginkhoshdel)

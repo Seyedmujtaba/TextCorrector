@@ -190,6 +190,18 @@ body {
   border-bottom: 2px dotted #ff8e53;
 }
 
+/* mark tag used by JS highlighter */
+mark {
+  background: rgba(255, 107, 107, 0.25);
+  color: inherit;
+  padding: 0 2px;
+  border-radius: 3px;
+}
+
+.dark-theme mark {
+  background: rgba(255, 107, 107, 0.18);
+}
+
 /* ============================================
    FORM ELEMENTS
    ============================================ */

@@ -1,4 +1,4 @@
-#--- writed by Seyedmujtaba Tabatabaee---#
+#--- written by Seyedmujtaba Tabatabaee---#
 
 
 # src/utils/main.py
