@@ -268,7 +268,7 @@ mark {
 }
 
 
-.dark-theme .output-box { /*فقط در حالت دارک‌تم سفید باشه و در لایت حالت تیره بمونه*/
+.dark-theme .output-box { 
   color: #ffffff;
 }
 
@@ -418,4 +418,18 @@ html {
 .dark-theme *:focus-visible {
   outline-color: #4facfe;
 }
+
+
+/* ============================================
+   CUSTOM COLOR OVERRIDES
+   ============================================ */
+.dark-theme .modern-textarea::placeholder {
+  color: #ffffff !important;
+}
+
+.dark-theme label,
+.dark-theme .issue-label {
+  color: #ffffff !important;
+}
+
 
