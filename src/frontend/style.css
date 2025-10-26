@@ -267,6 +267,12 @@ mark {
   border: 2px solid rgba(255, 255, 255, 0.1);
 }
 
+
+.dark-theme .output-box { /*فقط در حالت دارک‌تم سفید باشه و در لایت حالت تیره بمونه*/
+  color: #ffffff;
+}
+
+
 /* ============================================
    HERO SECTION
    ============================================ */
@@ -412,3 +418,4 @@ html {
 .dark-theme *:focus-visible {
   outline-color: #4facfe;
 }
+
