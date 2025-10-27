@@ -427,9 +427,7 @@ html {
   color: #ffffff !important;
 }
 
-.dark-theme label,
-.dark-theme .issue-label {
+.dark-theme #errorCount {
   color: #ffffff !important;
+  opacity: 1 !important;
 }
-
-
