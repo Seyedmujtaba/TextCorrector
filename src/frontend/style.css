@@ -423,11 +423,14 @@ html {
 /* ============================================
    CUSTOM COLOR OVERRIDES
    ============================================ */
+
 .dark-theme .modern-textarea::placeholder {
-  color: #ffffff !important;
-}
+  color: #ffffff !important; }
+
+.dark-theme label,
+.dark-theme .issue-label {
+  color: #ffffff !important; }
 
 .dark-theme #errorCount {
   color: #ffffff !important;
-  opacity: 1 !important;
-}
+  opacity: 1 !important; }
