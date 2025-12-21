@@ -147,12 +147,37 @@ This section documents the important files in the repository and what they do.
 ---
 
 ## Authors
-- [Seyedmujtaba Tabatabaee](https://github.com/Seyedmujtaba)
 - [Ayla Rasouli](https://github.com/aylarasouli)
+- [Seyedmujtaba Tabatabaee](https://github.com/Seyedmujtaba)
 - [Negin Khoshdel](https://github.com/neginkhoshdel)
 
 ---
 
+## Author Contributions
+  ### - [Ayla Rasouli](https://github.com/aylarasouli)
+    src/backend/spell_checker.py  
+    src/utils/text_utils.py  
+    src/utils/dict_loader.py  
+    src/backend/__init__.py  
+    libs/spellchecker/requirements.txt
+
+  ### - [Seyedmujtaba Tabatabaee](https://github.com/Seyedmujtaba)
+    README.md  
+    src/utils/__init__.py  
+    src/utils/main.py  
+    libs/dictionary/en_dict.txt  
+    libs/pyodide/pyodide_setup.js
+
+  ### - [Negin Khoshdel](https://github.com/neginkhoshdel)
+    src/frontend/index.html  
+    src/frontend/style.css  
+    src/frontend/app.js  
+    static/logo.png  
+    static/theme.css
+    
+---
+
 ## License
 No LICENSE file is included yet. If you plan to publish this repository publicly, consider adding an open-source license (e.g., MIT) and updating this section.
+
 
