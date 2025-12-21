@@ -147,11 +147,12 @@ This section documents the important files in the repository and what they do.
 ---
 
 ## Authors
-- Seyedmujtaba Tabatabaee
-- Ayla Rasouli
-- Negin Khoshdel
+- [Seyedmujtaba Tabatabaee](https://github.com/Seyedmujtaba)
+- [Ayla Rasouli](https://github.com/aylarasouli)
+- [Negin Khoshdel](https://github.com/neginkhoshdel)
 
 ---
 
 ## License
 No LICENSE file is included yet. If you plan to publish this repository publicly, consider adding an open-source license (e.g., MIT) and updating this section.
+
