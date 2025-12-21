@@ -29,19 +29,25 @@ TextCorrector is a simple web-based spell checker for English texts that runs di
 5. Receive the corrected text instantly.
 
 
+## Screenshots
+
+![Screen 1](screenshots/Light.png)
+![Screen 2](screenshots/Dark.png)
+
+
 ## Project Structure
 
 TextCorrector/
-├── README.md                # Project documentation
-├── build.py                 # Build script to generate the final package
-├── run_app.py               # Main Python entry point
-├── run.bat                  # Windows launcher
-├── CMakeLists.txt           # Build configuration (if compiled parts exist)
-├── static/                  # Web UI (HTML, CSS, JS)
+├── README.md                
+├── build.py                 
+├── run_app.py               
+├── run.bat                  
+├── CMakeLists.txt           
+├── static/ 
 │   ├── index.html
 │   ├── style.css
 │   └── app.js
-└── libs/                    # Dictionaries or other resources (optional)
+└── libs/                    
 
 
 ## Build & Releases
@@ -60,3 +66,4 @@ This project can be run directly after download — no installation required.
 - [Seyedmujtaba Tabatabaee](https://github.com/Seyedmujtaba)
 - [Ayla Rasouli](https://github.com/aylarasouli)
 - [Negin Khoshdel](https://github.com/neginkhoshdel)
+
