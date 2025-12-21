@@ -31,7 +31,10 @@ TextCorrector is a simple web-based spell checker for English texts that runs di
 
 ## Screenshots
 
+### Light Mode
 ![Screen 1](screenshots/Light.png)
+
+### Dark Mode
 ![Screen 2](screenshots/Dark.png)
 
 
@@ -66,4 +69,5 @@ This project can be run directly after download — no installation required.
 - [Seyedmujtaba Tabatabaee](https://github.com/Seyedmujtaba)
 - [Ayla Rasouli](https://github.com/aylarasouli)
 - [Negin Khoshdel](https://github.com/neginkhoshdel)
+
 
