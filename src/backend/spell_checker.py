@@ -10,21 +10,12 @@ from .utils.text_utils import to_lowercase, split_words, clean_spaces, join_word
 
 
 def _default_dict_path():
-    """Return path to default dictionary file"""
-    backend_dir = os.path.dirname(os.path.abspath(__file__))       # .../src/backend
+    backend_dir = os.path.dirname(os.path.abspath(__file__)) 
     project_root = os.path.abspath(os.path.join(backend_dir, "..", ".."))
     return os.path.join(project_root, "libs", "dictionary", "en_dict.txt")
 
 
 def fix_special_cases(text):
-    """
-    Replace incorrect double apostrophes like `’’` or `''` with the correct apostrophe `’`.
-    Also, return a list of changes made for user visibility.
-
-    Returns:
-        fixed_text (str): Cleaned-up text.
-        changes (list of tuples): (original_word, fixed_word)
-    """
     changes = []
     words = text.split()
 
@@ -45,27 +36,14 @@ def fix_special_cases(text):
 
 
 def correct_text(text, dict_path):
-    """
-    Process input text: fix special cases, normalize, spellcheck.
-    
-    Returns:
-        corrected_text (str)
-        mistake_count (int)
-        misspelled_words (list)
-        all_fixes (list of tuples): (wrong_word, corrected_word)
-    """
-    
     text, quote_fixes = fix_special_cases(text)
 
-    # Normalize
     text = clean_spaces(text)
     text = to_lowercase(text)
     words = split_words(text)
 
-    # Load dictionary
     dictionary = load_dictionary(dict_path)
 
-    # Spell checking
     spell = SpellChecker()
     spell.word_frequency.load_words(dictionary)
     misspelled = spell.unknown(words)
@@ -91,7 +69,6 @@ def correct_text(text, dict_path):
 
 
 def _read_input(args):
-    """Handles input from --text, --file, or stdin"""
     if args.text is not None:
         return args.text
     if args.file is not None:
@@ -119,23 +96,24 @@ def main():
 
     corrected_text, mistake_count, misspelled, all_fixes = correct_text(raw, dict_path)
 
-    print("\n=== Corrected Text ===")
+    print("\n Corrected Text ")
     print(corrected_text)
 
-    print("\n=== Stats ===")
+    print("\n Stats ")
     print(f"Number of words: {len(raw.split())}")
     print(f"Number of mistakes: {mistake_count}")
 
     if all_fixes:
-        print("\n=== Corrections ===")
+        print("\n Corrections ")
         for wrong, fixed in all_fixes:
             print(f"{wrong} → {fixed}")
 
     if args.show_words:
-        print("\n=== Tokens ===")
+        print("\n Tokens ")
         for i, w in enumerate(split_words(to_lowercase(clean_spaces(raw))), 1):
             print(f"{i:>3}: {w}")
 
 
 if __name__ == "__main__":
     main()
+
