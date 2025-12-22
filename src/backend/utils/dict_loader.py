@@ -12,7 +12,8 @@ def load_dictionary(file_path):
     except FileNotFoundError:
         print(f"Dictionary file not found: {file_path}")
     except Exception as e:
-        print("Error loading dictionary file")
+        print(f"Error loading dictionary file; {e}")
 
     return words
+
 
