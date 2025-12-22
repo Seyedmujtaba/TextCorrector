@@ -157,13 +157,13 @@ This section documents the important files in the repository and what they do.
   ### - [Ayla Rasouli](https://github.com/aylarasouli)
     src/backend/spell_checker.py  
     src/utils/text_utils.py  
-    src/utils/dict_loader.py  
-    src/backend/__init__.py  
+    src/utils/dict_loader.py    
     libs/spellchecker/requirements.txt
 
   ### - [Seyedmujtaba Tabatabaee](https://github.com/Seyedmujtaba)
     README.md  
-    src/utils/__init__.py  
+    src/utils/__init__.py
+    src/backend/__init__.py
     src/utils/main.py  
     libs/dictionary/en_dict.txt  
     libs/pyodide/pyodide_setup.js
@@ -179,5 +179,6 @@ This section documents the important files in the repository and what they do.
 
 ## License
 No LICENSE file is included yet. If you plan to publish this repository publicly, consider adding an open-source license (e.g., MIT) and updating this section.
+
 
 
