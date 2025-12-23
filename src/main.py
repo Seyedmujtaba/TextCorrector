@@ -20,8 +20,8 @@ except ImportError:
 
 def _default_dict_path():
     """libs/dictionary/en_dict.txt relative to project root"""
-    utils_dir = os.path.dirname(os.path.abspath(__file__))       # .../src/utils
-    project_root = os.path.abspath(os.path.join(utils_dir, "..", ".."))  # project root
+    utils_dir = os.path.dirname(os.path.abspath(__file__))    
+    project_root = os.path.abspath(os.path.join(utils_dir, "..", ".."))  
     return os.path.join(project_root, "libs", "dictionary", "en_dict.txt")
 
 
@@ -38,7 +38,6 @@ def _read_input(args):
 
 
 def _normalize(text):
-    """clean -> lowercase -> split -> join"""
     text = clean_spaces(text)
     text = to_lowercase(text)
     words = split_words(text)
@@ -106,3 +105,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
