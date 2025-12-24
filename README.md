@@ -1,6 +1,6 @@
 # TextCorrector
-#### Video Demo: <URL HERE>
-#### Description:
+#### Video Demo: <[URL HERE](https://youtu.be/M_7a4BFlALQ?si=YRm7vSVfQbuvPJ6b)>
+#### Description: CS50 final project
 
 
 This repository intentionally supports **two execution modes**, so the spell-checker can be demonstrated in different ways:
@@ -179,6 +179,7 @@ This section documents the important files in the repository and what they do.
 
 ## License
 No LICENSE file is included yet. If you plan to publish this repository publicly, consider adding an open-source license (e.g., MIT) and updating this section.
+
 
 
 
